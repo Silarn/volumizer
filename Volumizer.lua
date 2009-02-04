@@ -1,24 +1,23 @@
 -------------------------------------------------------------------------------
 -- Addon namespace
 -------------------------------------------------------------------------------
-local Volumizer = LibStub("AceAddon-3.0"):NewAddon("Volumizer")
+local Volumizer = CreateFrame("Frame", nil, UIParent)
+Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event] (self, event, ...) end end)
+
 _G["Volumizer"] = Volumizer
 
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
-local objdata = {
+local DataObj = LDB:NewDataObject("Volumizer", {
 	type	= "launcher",
 	label	= "Volumizer",
 	icon	= "Interface\\COMMON\\VoiceChat-Speaker-Small",
-}
-
-local DataObj = LDB:NewDataObject("Volumizer", objdata)
+	tooltip	= "Right-click to display controls."
+})
 
 -------------------------------------------------------------------------------
 -- Local variables
 -------------------------------------------------------------------------------
-local Panel
-
 local Data = {
 	["ambience"] = {
 		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
@@ -53,11 +52,11 @@ local HorizontalSliderBG = {
 -- Local functions
 -------------------------------------------------------------------------------
 local function MakeSlider(name, relative)
-	local container = CreateFrame("Frame", nil, Panel)
+	local container = CreateFrame("Frame", nil, Volumizer)
 	container:SetWidth(130)
 	container:SetHeight(40)
 
-	if (relative == Panel) then
+	if (relative == Volumizer) then
 		container:SetPoint("TOP", relative, 0, -5)
 	else
 		container:SetPoint("TOP", relative, 0, -30)
@@ -72,7 +71,7 @@ local function MakeSlider(name, relative)
 	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 	slider:SetBackdrop(HorizontalSliderBG)
  
-	Panel:SetHeight(Panel:GetHeight() + 32)
+	Volumizer:SetHeight(Volumizer:GetHeight() + 32)
 
 	local option = Data[name].SoundOption
 	slider:SetMinMaxValues(option.minValue, option.maxValue)
@@ -80,16 +79,12 @@ local function MakeSlider(name, relative)
 	slider:SetValueStep(option.valueStep)
 
 	slider:SetScript("OnValueChanged", function(slider, value) Data[name].AudioOption:SetValue(value) end)
-	hooksecurefunc('SetCVar',
-		       function(cvar, value)
-			       if cvar == Data[name].CVar then
-				       slider:SetValue(value)
-			       end
-		       end)
+	hooksecurefunc("SetCVar", function(cvar, value) if cvar == Data[name].CVar then slider:SetValue(value) end end)
+
 	local text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
 	text:SetText(_G[option.text])
- 
+
 	local low = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	low:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", -4, 3)
 	low:SetText(option.minValue * 100)
@@ -111,50 +106,41 @@ local function GetAnchor(frame)
 end
 
 local function HidePanel()
-	if MouseIsOver(Panel) then return end
-	Panel:SetScript("OnLeave", nil)
-	Panel:Hide()
+	if MouseIsOver(Volumizer) then return end
+	Volumizer:SetScript("OnLeave", nil)
+	Volumizer:Hide()
 end
 
 local function ShowPanel(anchor)
-	Panel:ClearAllPoints()
-	Panel:SetPoint(GetAnchor(anchor))
-	Panel:SetScript("OnLeave", HidePanel)
-	Panel:Show()
-end
-
--------------------------------------------------------------------------------
--- LDB Functions
--------------------------------------------------------------------------------
-function DataObj:OnEnter(self)
-end
-
-function DataObj:OnLeave()
-	HidePanel()
-end
-
-function DataObj:OnClick(button)
-	ShowPanel(self)
+	Volumizer:ClearAllPoints()
+	Volumizer:SetPoint(GetAnchor(anchor))
+	Volumizer:SetScript("OnLeave", HidePanel)
+	Volumizer:Show()
 end
 
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
-function Volumizer:OnInitialize()
-	Panel = CreateFrame("Frame", nil, UIParent)
-	Panel:SetFrameStrata("TOOLTIP")
-	Panel:SetBackdrop(GameTooltip:GetBackdrop())
-	Panel:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
-	Panel:SetBackdropColor(GameTooltip:GetBackdropColor())
-	Panel:SetWidth(150)
-	Panel:SetHeight(10)
-	Panel:EnableMouse(true)
-	Panel:Hide()
+function Volumizer:PLAYER_LOGIN()
+	self:SetFrameStrata("TOOLTIP")
+	self:SetBackdrop(GameTooltip:GetBackdrop())
+	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
+	self:SetBackdropColor(GameTooltip:GetBackdropColor())
+	self:SetWidth(150)
+	self:SetHeight(10)
+	self:EnableMouse(true)
+	self:Hide()
 
-	local relative = Panel
+	local relative = self
 	local slider
 	for k, v in pairs(Data) do
 		slider = MakeSlider(k, relative)
 		relative = slider
 	end
+	self:UnregisterEvent("PLAYER_LOGIN")
+	self.PLAYER_LOGIN = nil
 end
+
+function DataObj:OnClick(button) ShowPanel(self) end
+
+if IsLoggedIn() then Volumizer:PLAYER_LOGIN() else Volumizer:RegisterEvent("PLAYER_LOGIN") end

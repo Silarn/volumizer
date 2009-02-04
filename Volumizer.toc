@@ -6,7 +6,6 @@
 ## X-Date: @project-date-iso@
 ## X-Email: torhal-wow@googlegroups.com
 ## X-Category: Miscellaneous
-## OptionalDeps: Ace3
 
 ## LoadManagers: AddonLoader
 ## X-LoadOn-Always: Delayed
