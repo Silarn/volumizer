@@ -20,23 +20,31 @@ local DataObj = LDB:NewDataObject("Volumizer", {
 local info = {
 	["ambience"] = {
 		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
-		CVar		= "Sound_AmbienceVolume",
-		AudioOption	= AudioOptionsSoundPanelAmbienceVolume
+		VolumeCVar	= "Sound_AmbienceVolume",
+		Volume		= AudioOptionsSoundPanelAmbienceVolume,
+		EnableCVar	= "Sound_EnableAmbience",
+		Enable		= AudioOptionsSoundPanelAmbientSounds
 	},
 	["music"] = {
 		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
-		CVar		= "Sound_MusicVolume",
-		AudioOption	= AudioOptionsSoundPanelMusicVolume
+		VolumeCVar	= "Sound_MusicVolume",
+		Volume		= AudioOptionsSoundPanelMusicVolume,
+		EnableCVar	= "Sound_EnableMusic",
+		Enable		= AudioOptionsSoundPanelMusic
 	},
 	["master"] = {
 		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
-		CVar		= "Sound_MasterVolume",
-		AudioOption	= AudioOptionsSoundPanelMasterVolume
+		VolumeCVar	= "Sound_MasterVolume",
+		Volume		= AudioOptionsSoundPanelMasterVolume,
+		EnableCVar	= "Sound_EnableAllSounds",
+		Enable		= AudioOptionsSoundPanelEnableSound
 	},
 	["sfx"]	= {
 		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
-		CVar		= "Sound_SFXVolume",
-		AudioOption	= AudioOptionsSoundPanelSoundVolume
+		VolumeCVar	= "Sound_SFXVolume",
+		Volume		= AudioOptionsSoundPanelSoundVolume,
+		EnableCVar	= "Sound_EnableSFX",
+		Enable		= AudioOptionsSoundPanelSoundEffects
 	}
 }
 
@@ -50,14 +58,26 @@ local HorizontalSliderBG = {
 -------------------------------------------------------------------------------
 -- Local functions
 -------------------------------------------------------------------------------
-local function MakeSlider(name, relative)
+local function MakeControl(name, relative)
 	local container = CreateFrame("Frame", nil, Volumizer)
-	container:SetWidth(130)
+	container:SetWidth(155)
 	container:SetHeight(40)
 	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -10 or -30)
 
+	local check = CreateFrame("CheckButton", nil, container)
+	check:SetWidth(15)
+	check:SetHeight(15)
+	check:SetPoint("LEFT", container, "LEFT")
+	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
+	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	check:SetChecked(info[name].Enable:GetValue())
+	check:SetScript("OnClick", function(checkButton) info[name].Enable:SetValue(check:GetChecked() and 1 or 0) end)
+
 	local slider = CreateFrame("Slider", nil, container)
-	slider:SetPoint("LEFT")
+	slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
 	slider:SetPoint("RIGHT")
 	slider:SetHeight(15)
 	slider:SetHitRectInsets(0, 0, -10, -10)
@@ -65,23 +85,22 @@ local function MakeSlider(name, relative)
 	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 	slider:SetBackdrop(HorizontalSliderBG)
 	slider:SetMinMaxValues(info[name].SoundOption.minValue, info[name].SoundOption.maxValue)
-	slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(info[name].CVar))
+	slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(info[name].VolumeCVar))
 	slider:SetValueStep(info[name].SoundOption.valueStep)
-	slider:SetScript("OnValueChanged", function(slider, value) info[name].AudioOption:SetValue(value) end)
-	hooksecurefunc("SetCVar", function(cvar, value) if cvar == info[name].CVar then slider:SetValue(value) end end)
+	slider:SetScript("OnValueChanged", function(slider, value) info[name].Volume:SetValue(value) end)
 
 	local text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
 	text:SetText(_G[info[name].SoundOption.text])
 
-	local low = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	low:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", -4, 3)
-	low:SetText(info[name].SoundOption.minValue * 100)
- 
-	local high = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	high:SetPoint("TOPRIGHT", slider, "BOTTOMRIGHT", 4, 3)
-	high:SetText(info[name].SoundOption.maxValue * 100)
- 
+	hooksecurefunc("SetCVar",
+		       function(cvar, value)
+			       if cvar == info[name].VolumeCVar then
+				       slider:SetValue(value)
+			       elseif cvar == info[name].EnableCVar then
+				       check:SetChecked(value)
+			       end
+		       end)
 	return container
 end
 
@@ -114,34 +133,17 @@ function Volumizer:PLAYER_LOGIN()
 	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
 	self:SetBackdropColor(GameTooltip:GetBackdropColor())
 	self:SetWidth(175)
-	self:SetHeight(175)
+	self:SetHeight(140)
 	self:EnableMouse(true)
 	self:Hide()
 	self:SetScript("OnLeave", HidePanel)
 
 	local relative = self
-	local slider
+	local control
 	for k, v in pairs(info) do
-		slider = MakeSlider(k, relative)
-		relative = slider
+		control = MakeControl(k, relative)
+		relative = control
 	end
-	local audio = AudioOptionsSoundPanelEnableSound
-	local check = CreateFrame("CheckButton", nil, relative)
-	check:SetWidth(22)
-	check:SetHeight(22)
-	check:SetPoint("TOP", relative, "LEFT", 5, -25)
-	check:SetHitRectInsets(0, -100, 0, 0)
-	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
-	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
-	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
-	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
-	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
-	check:SetChecked(audio:GetValue())
-	check:SetScript("OnClick", function(checkButton) audio:SetValue(check:GetChecked() and 1 or 0) end)
-
-	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	text:SetPoint("LEFT", check, "RIGHT", 0, 1)
-	text:SetText(ENABLE_SOUND)
 
 	self:UnregisterEvent("PLAYER_LOGIN")
 	self.PLAYER_LOGIN = nil
