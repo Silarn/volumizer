@@ -127,7 +127,7 @@ end
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
-function Volumizer:PLAYER_LOGIN()
+function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("TOOLTIP")
 	self:SetBackdrop(GameTooltip:GetBackdrop())
 	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
@@ -145,7 +145,7 @@ function Volumizer:PLAYER_LOGIN()
 		relative = control
 	end
 
-	self:UnregisterEvent("PLAYER_LOGIN")
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	self.PLAYER_LOGIN = nil
 end
 
@@ -161,4 +161,4 @@ end
 
 function DataObj:OnLeave() GameTooltip:Hide() end
 
-if IsLoggedIn() then Volumizer:PLAYER_LOGIN() else Volumizer:RegisterEvent("PLAYER_LOGIN") end
+Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
