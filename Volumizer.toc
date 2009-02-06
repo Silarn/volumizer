@@ -7,9 +7,6 @@
 ## X-Email: torhal-wow@googlegroups.com
 ## X-Category: Miscellaneous
 
-## LoadManagers: AddonLoader
-## X-LoadOn-Always: Delayed
-
 #@no-lib-strip@
 embeds.xml
 #@end-no-lib-strip
