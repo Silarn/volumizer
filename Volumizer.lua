@@ -105,6 +105,7 @@ local function MakeControl(name, relative)
 end
 
 local function GetAnchor(frame)
+	if not frame then return "CENTER", UIParent, 0, 0 end
 	local x,y = frame:GetCenter()
 
 	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
@@ -162,3 +163,6 @@ end
 function DataObj:OnLeave() GameTooltip:Hide() end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+_G.SLASH_Volumizer1 = "/volumizer"
+SlashCmdList["Volumizer"] = function() ShowPanel(nil) end
