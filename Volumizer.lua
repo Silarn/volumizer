@@ -48,6 +48,30 @@ local info = {
 	}
 }
 
+local toggle = {
+	["error"] = {
+		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
+		EnableCVar	= "Sound_EnableErrorSpeech",
+		Enable		= AudioOptionsSoundPanelErrorSpeech
+	},
+	["emote"] = {
+		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
+		EnableCVar	= "Sound_EnableEmoteSounds",
+		Enable		= AudioOptionsSoundPanelEmoteSounds
+	},
+	["loop"] = {
+		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
+		EnableCVar	= "Sound_ZoneMusicNoDelay",
+		Enable		= AudioOptionsSoundPanelLoopMusic
+	},
+	["background"] = {
+		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
+		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
+		Enable		= AudioOptionsSoundPanelSoundInBG
+	},
+}
+
+
 local HorizontalSliderBG = {
 	bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
 	edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
@@ -58,21 +82,52 @@ local HorizontalSliderBG = {
 -------------------------------------------------------------------------------
 -- Local functions
 -------------------------------------------------------------------------------
-local function MakeControl(name, relative)
-	local container = CreateFrame("Frame", nil, Volumizer)
-	container:SetWidth(155)
-	container:SetHeight(40)
-	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -10 or -30)
-
-	local check = CreateFrame("CheckButton", nil, container)
+local function MakeCheckButton(parent)
+	local check = CreateFrame("CheckButton", nil, parent)
 	check:SetWidth(15)
 	check:SetHeight(15)
-	check:SetPoint("LEFT", container, "LEFT")
 	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
 	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
 	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
 	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
 	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+
+	return check
+end
+
+local function MakeContainer(relative, dist)
+	local container = CreateFrame("Frame", nil, Volumizer)
+	container:SetWidth(155)
+	container:SetHeight(40)
+	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -10 or (relative and dist or -30))
+
+	return container
+end
+
+local function MakeToggle(name, relative)
+	local container = MakeContainer(relative, -15)
+	local check = MakeCheckButton(container)
+	check:SetPoint("LEFT", container, "LEFT")
+	check:SetChecked(toggle[name].Enable:GetValue())
+	check:SetScript("OnClick", function(checkButton) toggle[name].Enable:SetValue(check:GetChecked() and 1 or 0) end)
+
+	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	text:SetPoint("LEFT", check, "RIGHT", 0, 3)
+	text:SetText(_G[toggle[name].SoundOption.text])
+
+	hooksecurefunc("SetCVar",
+		       function(cvar, value)
+			       if cvar == toggle[name].EnableCVar then
+				       check:SetChecked(value)
+			       end
+		       end)
+	return container
+end
+
+local function MakeControl(name, relative)
+	local container = MakeContainer(relative)
+	local check = MakeCheckButton(container)
+	check:SetPoint("LEFT", container, "LEFT")
 	check:SetChecked(info[name].Enable:GetValue())
 	check:SetScript("OnClick", function(checkButton) info[name].Enable:SetValue(check:GetChecked() and 1 or 0) end)
 
@@ -134,16 +189,22 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
 	self:SetBackdropColor(GameTooltip:GetBackdropColor())
 	self:SetWidth(175)
-	self:SetHeight(140)
+	self:SetHeight(205)
 	self:EnableMouse(true)
 	self:Hide()
 	self:SetScript("OnLeave", HidePanel)
 
 	local relative = self
-	local control
+	local widget
 	for k, v in pairs(info) do
-		control = MakeControl(k, relative)
-		relative = control
+		widget = MakeControl(k, relative)
+		relative = widget
+	end
+	relative = MakeContainer(relative, -10)
+
+	for k, v in pairs(toggle) do
+		widget = MakeToggle(k, relative)
+		relative = widget
 	end
 
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
