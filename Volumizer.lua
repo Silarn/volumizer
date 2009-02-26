@@ -11,6 +11,7 @@ local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 local DataObj = LDB:NewDataObject("Volumizer", {
 	type	= "launcher",
 	label	= "Volumizer",
+	text	= "0%",
 	icon	= "Interface\\COMMON\\VoiceChat-Speaker-Small",
 })
 
@@ -105,19 +106,20 @@ local function MakeContainer(relative, dist)
 end
 
 local function MakeToggle(name, relative)
+	local ref = toggle[name]
 	local container = MakeContainer(relative, -15)
 	local check = MakeCheckButton(container)
 	check:SetPoint("LEFT", container, "LEFT")
-	check:SetChecked(toggle[name].Enable:GetValue())
-	check:SetScript("OnClick", function(checkButton) toggle[name].Enable:SetValue(check:GetChecked() and 1 or 0) end)
+	check:SetChecked(ref.Enable:GetValue())
+	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
 
-	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	text:SetPoint("LEFT", check, "RIGHT", 0, 3)
-	text:SetText(_G[toggle[name].SoundOption.text])
+	text:SetText(_G[ref.SoundOption.text])
 
 	hooksecurefunc("SetCVar",
 		       function(cvar, value)
-			       if cvar == toggle[name].EnableCVar then
+			       if cvar == ref.EnableCVar then
 				       check:SetChecked(value)
 			       end
 		       end)
@@ -125,11 +127,12 @@ local function MakeToggle(name, relative)
 end
 
 local function MakeControl(name, relative)
+	local ref = info[name]
 	local container = MakeContainer(relative)
 	local check = MakeCheckButton(container)
 	check:SetPoint("LEFT", container, "LEFT")
-	check:SetChecked(info[name].Enable:GetValue())
-	check:SetScript("OnClick", function(checkButton) info[name].Enable:SetValue(check:GetChecked() and 1 or 0) end)
+	check:SetChecked(ref.Enable:GetValue())
+	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
 
 	local slider = CreateFrame("Slider", nil, container)
 	slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
@@ -139,20 +142,28 @@ local function MakeControl(name, relative)
 	slider:SetOrientation("HORIZONTAL")
 	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 	slider:SetBackdrop(HorizontalSliderBG)
-	slider:SetMinMaxValues(info[name].SoundOption.minValue, info[name].SoundOption.maxValue)
-	slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(info[name].VolumeCVar))
-	slider:SetValueStep(info[name].SoundOption.valueStep)
-	slider:SetScript("OnValueChanged", function(slider, value) info[name].Volume:SetValue(value) end)
+	slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
+	slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
+	slider:SetValueStep(ref.SoundOption.valueStep)
 
-	local text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-	text:SetText(_G[info[name].SoundOption.text])
+	slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
+	slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+
+	slider:SetScript("OnValueChanged",
+			 function(slider, value)
+				 ref.Volume:SetValue(value)
+				 slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+				 if (ref == info["master"]) then
+					 DataObj:UpdateText()
+				 end
+			 end)
 
 	hooksecurefunc("SetCVar",
 		       function(cvar, value)
-			       if cvar == info[name].VolumeCVar then
+			       if cvar == ref.VolumeCVar then
 				       slider:SetValue(value)
-			       elseif cvar == info[name].EnableCVar then
+			       elseif cvar == ref.EnableCVar then
 				       check:SetChecked(value)
 			       end
 		       end)
@@ -200,7 +211,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		widget = MakeControl(k, relative)
 		relative = widget
 	end
-	relative = MakeContainer(relative, -10)
+	relative = MakeContainer(relative, -10)	-- Blank space in panel.
 
 	for k, v in pairs(toggle) do
 		widget = MakeToggle(k, relative)
@@ -208,7 +219,8 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	end
 
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-	self.PLAYER_LOGIN = nil
+	self.PLAYER_ENTERING_WORLD = nil
+	DataObj:UpdateText()
 end
 
 function DataObj:OnClick(frame, button)	ShowPanel(self) end
@@ -223,7 +235,12 @@ end
 
 function DataObj:OnLeave() GameTooltip:Hide() end
 
+function DataObj:UpdateText()
+	self.text = string.format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
+end
+
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 _G.SLASH_Volumizer1 = "/volumizer"
+_G.SLASH_Volumizer2 = "/vol"
 SlashCmdList["Volumizer"] = function() ShowPanel(nil) end
