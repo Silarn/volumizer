@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- Addon namespace
 -------------------------------------------------------------------------------
-local Volumizer = CreateFrame("Frame", nil, UIParent)
+local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
 Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event] (self, event, ...) end end)
 
 _G["Volumizer"] = Volumizer
@@ -204,6 +204,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:EnableMouse(true)
 	self:Hide()
 	self:SetScript("OnLeave", HidePanel)
+	tinsert(UISpecialFrames, "VolumizerPanel")
 
 	local relative = self
 	local widget
