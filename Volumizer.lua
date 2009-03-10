@@ -206,6 +206,28 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetScript("OnLeave", HidePanel)
 	tinsert(UISpecialFrames, "VolumizerPanel")
 
+	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+	local old_x, old_y, click_time
+	WorldFrame:SetScript("OnMouseDown", function(frame, ...)
+		old_x, old_y = GetCursorPosition()
+		click_time = GetTime()
+		if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+	end)
+
+	WorldFrame:SetScript("OnMouseUp", function(frame, ...)
+		local x, y = GetCursorPosition()
+		if not old_x or not old_y or not x or not y or not click_time then
+			self:Hide()
+			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+			return
+		end
+		if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 0.5 then
+			self:Hide()
+		end
+		if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+	end)
+
 	local relative = self
 	local widget
 	for k, v in pairs(info) do
