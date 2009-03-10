@@ -262,8 +262,15 @@ function DataObj:UpdateText()
 	self.text = string.format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
 end
 
+local function TogglePanel()
+	if Volumizer:IsShown() then
+		Volumizer:Hide()
+	else
+		ShowPanel(nil)
+	end
+end
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 _G.SLASH_Volumizer1 = "/volumizer"
 _G.SLASH_Volumizer2 = "/vol"
-SlashCmdList["Volumizer"] = function() ShowPanel(nil) end
+SlashCmdList["Volumizer"] = function() TogglePanel() end
