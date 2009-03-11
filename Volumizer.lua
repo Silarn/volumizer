@@ -16,6 +16,11 @@ local DataObj = LDB:NewDataObject("Volumizer", {
 })
 
 -------------------------------------------------------------------------------
+-- Localized globals
+-------------------------------------------------------------------------------
+local GameTooltip = GameTooltip
+
+-------------------------------------------------------------------------------
 -- Local variables
 -------------------------------------------------------------------------------
 local info = {
@@ -24,28 +29,32 @@ local info = {
 		VolumeCVar	= "Sound_AmbienceVolume",
 		Volume		= AudioOptionsSoundPanelAmbienceVolume,
 		EnableCVar	= "Sound_EnableAmbience",
-		Enable		= AudioOptionsSoundPanelAmbientSounds
+		Enable		= AudioOptionsSoundPanelAmbientSounds,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE
 	},
 	["music"] = {
 		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
 		VolumeCVar	= "Sound_MusicVolume",
 		Volume		= AudioOptionsSoundPanelMusicVolume,
 		EnableCVar	= "Sound_EnableMusic",
-		Enable		= AudioOptionsSoundPanelMusic
+		Enable		= AudioOptionsSoundPanelMusic,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC
 	},
 	["master"] = {
 		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
 		VolumeCVar	= "Sound_MasterVolume",
 		Volume		= AudioOptionsSoundPanelMasterVolume,
 		EnableCVar	= "Sound_EnableAllSounds",
-		Enable		= AudioOptionsSoundPanelEnableSound
+		Enable		= AudioOptionsSoundPanelEnableSound,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND
 	},
 	["sfx"]	= {
 		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
 		VolumeCVar	= "Sound_SFXVolume",
 		Volume		= AudioOptionsSoundPanelSoundVolume,
 		EnableCVar	= "Sound_EnableSFX",
-		Enable		= AudioOptionsSoundPanelSoundEffects
+		Enable		= AudioOptionsSoundPanelSoundEffects,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUNDFX
 	}
 }
 
@@ -53,22 +62,26 @@ local toggle = {
 	["error"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
 		EnableCVar	= "Sound_EnableErrorSpeech",
-		Enable		= AudioOptionsSoundPanelErrorSpeech
+		Enable		= AudioOptionsSoundPanelErrorSpeech,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH
 	},
 	["emote"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
 		EnableCVar	= "Sound_EnableEmoteSounds",
-		Enable		= AudioOptionsSoundPanelEmoteSounds
+		Enable		= AudioOptionsSoundPanelEmoteSounds,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS
 	},
 	["loop"] = {
 		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
-		Enable		= AudioOptionsSoundPanelLoopMusic
+		Enable		= AudioOptionsSoundPanelLoopMusic,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING
 	},
 	["background"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
-		Enable		= AudioOptionsSoundPanelSoundInBG
+		Enable		= AudioOptionsSoundPanelSoundInBG,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND
 	},
 }
 
@@ -83,6 +96,13 @@ local HorizontalSliderBG = {
 -------------------------------------------------------------------------------
 -- Local functions
 -------------------------------------------------------------------------------
+local function HideTooltip() GameTooltip:Hide() end
+local function ShowTooltip(self)
+	if not self.tooltip then return end
+	GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+	GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+end
+
 local function MakeCheckButton(parent)
 	local check = CreateFrame("CheckButton", nil, parent)
 	check:SetWidth(15)
@@ -111,7 +131,11 @@ local function MakeToggle(name, relative)
 	local check = MakeCheckButton(container)
 	check:SetPoint("LEFT", container, "LEFT")
 	check:SetChecked(ref.Enable:GetValue())
+	check:SetHitRectInsets(-10, -150, 0, 0)
 	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+	check.tooltip = ref.Tooltip
+	check:SetScript("OnEnter", ShowTooltip)
+	check:SetScript("OnLeave", HideTooltip)
 
 	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	text:SetPoint("LEFT", check, "RIGHT", 0, 3)
@@ -133,6 +157,9 @@ local function MakeControl(name, relative)
 	check:SetPoint("LEFT", container, "LEFT")
 	check:SetChecked(ref.Enable:GetValue())
 	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+	check.tooltip = ref.Tooltip
+	check:SetScript("OnEnter", ShowTooltip)
+	check:SetScript("OnLeave", HideTooltip)
 
 	local slider = CreateFrame("Slider", nil, container)
 	slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
@@ -180,11 +207,6 @@ local function GetAnchor(frame)
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 end
 
-local function HidePanel()
-	if MouseIsOver(Volumizer) then return end
-	Volumizer:Hide()
-end
-
 local function ShowPanel(anchor)
 	Volumizer:ClearAllPoints()
 	Volumizer:SetPoint(GetAnchor(anchor))
@@ -195,7 +217,7 @@ end
 -- Main AddOn functions
 -------------------------------------------------------------------------------
 function Volumizer:PLAYER_ENTERING_WORLD()
-	self:SetFrameStrata("TOOLTIP")
+	self:SetFrameStrata("DIALOG")
 	self:SetBackdrop(GameTooltip:GetBackdrop())
 	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
 	self:SetBackdropColor(GameTooltip:GetBackdropColor())
@@ -203,7 +225,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetHeight(205)
 	self:EnableMouse(true)
 	self:Hide()
-	self:SetScript("OnLeave", HidePanel)
 	tinsert(UISpecialFrames, "VolumizerPanel")
 
 	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
