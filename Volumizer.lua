@@ -4,8 +4,6 @@
 local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
 Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event] (self, event, ...) end end)
 
-_G["Volumizer"] = Volumizer
-
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
 local DataObj = LDB:NewDataObject("Volumizer", {
@@ -207,12 +205,6 @@ local function GetAnchor(frame)
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 end
 
-local function ShowPanel(anchor)
-	Volumizer:ClearAllPoints()
-	Volumizer:SetPoint(GetAnchor(anchor))
-	Volumizer:Show()
-end
-
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
@@ -243,7 +235,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
 			return
 		end
-		if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 0.5 then
+		if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
 			self:Hide()
 		end
 		if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
@@ -267,7 +259,17 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	DataObj:UpdateText()
 end
 
-function DataObj:OnClick(frame, button)	ShowPanel(self) end
+function Volumizer:Toggle(anchor)
+	if self:IsShown() then
+		self:Hide()
+	else
+		self:ClearAllPoints()
+		self:SetPoint(GetAnchor(anchor))
+		self:Show()
+	end
+end
+
+function DataObj:OnClick(frame, button)	Volumizer:Toggle(self) end
 
 function DataObj:OnEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
@@ -283,15 +285,8 @@ function DataObj:UpdateText()
 	self.text = string.format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
 end
 
-local function TogglePanel()
-	if Volumizer:IsShown() then
-		Volumizer:Hide()
-	else
-		ShowPanel(nil)
-	end
-end
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 _G.SLASH_Volumizer1 = "/volumizer"
 _G.SLASH_Volumizer2 = "/vol"
-SlashCmdList["Volumizer"] = function() TogglePanel() end
+SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
