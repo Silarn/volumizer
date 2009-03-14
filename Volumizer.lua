@@ -16,7 +16,11 @@ local DataObj = LDB:NewDataObject("Volumizer", {
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local GameTooltip = GameTooltip
+local _G = _G
+local GameTooltip = _G.GameTooltip
+local tostring = _G.tostring
+local format = _G.string.format
+local CreateFrame = _G.CreateFrame
 
 -------------------------------------------------------------------------------
 -- Local variables
@@ -123,140 +127,160 @@ local function MakeContainer(relative, dist)
 	return container
 end
 
-local function MakeToggle(name, relative)
-	local ref = toggle[name]
-	local container = MakeContainer(relative, -15)
-	local check = MakeCheckButton(container)
-	check:SetPoint("LEFT", container, "LEFT")
-	check:SetChecked(ref.Enable:GetValue())
-	check:SetHitRectInsets(-10, -150, 0, 0)
-	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
-	check.tooltip = ref.Tooltip
-	check:SetScript("OnEnter", ShowTooltip)
-	check:SetScript("OnLeave", HideTooltip)
+local MakeToggle, MakeControl
+do
+	local hooksecurefunc = _G.hooksecurefunc
+	local BlizzardOptionsPanel_GetCVarSafe = _G.BlizzardOptionsPanel_GetCVarSafe
 
-	local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", check, "RIGHT", 0, 3)
-	text:SetText(_G[ref.SoundOption.text])
+	function MakeToggle(name, relative)
+		local ref = toggle[name]
+		local container = MakeContainer(relative, -15)
+		local check = MakeCheckButton(container)
+		check:SetPoint("LEFT", container, "LEFT")
+		check:SetChecked(ref.Enable:GetValue())
+		check:SetHitRectInsets(-10, -150, 0, 0)
+		check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+		check.tooltip = ref.Tooltip
+		check:SetScript("OnEnter", ShowTooltip)
+		check:SetScript("OnLeave", HideTooltip)
 
-	hooksecurefunc("SetCVar",
-		       function(cvar, value)
-			       if cvar == ref.EnableCVar then
-				       check:SetChecked(value)
-			       end
-		       end)
-	return container
+		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
+		text:SetText(_G[ref.SoundOption.text])
+
+		hooksecurefunc("SetCVar",
+			       function(cvar, value)
+				       if cvar == ref.EnableCVar then
+					       check:SetChecked(value)
+				       end
+			       end)
+		return container
+	end
+
+	function MakeControl(name, relative)
+		local ref = info[name]
+		local container = MakeContainer(relative)
+		local check = MakeCheckButton(container)
+		check:SetPoint("LEFT", container, "LEFT")
+		check:SetChecked(ref.Enable:GetValue())
+		check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+		check.tooltip = ref.Tooltip
+		check:SetScript("OnEnter", ShowTooltip)
+		check:SetScript("OnLeave", HideTooltip)
+
+		local slider = CreateFrame("Slider", nil, container)
+		slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
+		slider:SetPoint("RIGHT")
+		slider:SetHeight(15)
+		slider:SetHitRectInsets(0, 0, -10, -10)
+		slider:SetOrientation("HORIZONTAL")
+		slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
+		slider:SetBackdrop(HorizontalSliderBG)
+		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
+		slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
+		slider:SetValueStep(ref.SoundOption.valueStep)
+
+		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
+		slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+
+		slider:SetScript("OnValueChanged",
+				 function(slider, value)
+					 ref.Volume:SetValue(value)
+					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+					 if (ref == info["master"]) then
+						 DataObj:UpdateText()
+					 end
+				 end)
+
+		hooksecurefunc("SetCVar",
+			       function(cvar, value)
+				       if cvar == ref.VolumeCVar then
+					       slider:SetValue(value)
+				       elseif cvar == ref.EnableCVar then
+					       check:SetChecked(value)
+				       end
+			       end)
+		return container
+	end
 end
 
-local function MakeControl(name, relative)
-	local ref = info[name]
-	local container = MakeContainer(relative)
-	local check = MakeCheckButton(container)
-	check:SetPoint("LEFT", container, "LEFT")
-	check:SetChecked(ref.Enable:GetValue())
-	check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
-	check.tooltip = ref.Tooltip
-	check:SetScript("OnEnter", ShowTooltip)
-	check:SetScript("OnLeave", HideTooltip)
+local GetAnchor
+do
+	local UIParent = UIParent
 
-	local slider = CreateFrame("Slider", nil, container)
-	slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
-	slider:SetPoint("RIGHT")
-	slider:SetHeight(15)
-	slider:SetHitRectInsets(0, 0, -10, -10)
-	slider:SetOrientation("HORIZONTAL")
-	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-	slider:SetBackdrop(HorizontalSliderBG)
-	slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
-	slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
-	slider:SetValueStep(ref.SoundOption.valueStep)
+	function GetAnchor(frame)
+		if not frame then return "CENTER", UIParent, 0, 0 end
 
-	slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-	slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+		local x,y = frame:GetCenter()
 
-	slider:SetScript("OnValueChanged",
-			 function(slider, value)
-				 ref.Volume:SetValue(value)
-				 slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
-				 if (ref == info["master"]) then
-					 DataObj:UpdateText()
-				 end
-			 end)
+		if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
 
-	hooksecurefunc("SetCVar",
-		       function(cvar, value)
-			       if cvar == ref.VolumeCVar then
-				       slider:SetValue(value)
-			       elseif cvar == ref.EnableCVar then
-				       check:SetChecked(value)
-			       end
-		       end)
-	return container
-end
+		local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
+		local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
 
-local function GetAnchor(frame)
-	if not frame then return "CENTER", UIParent, 0, 0 end
-	local x,y = frame:GetCenter()
-
-	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
-	local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
-	local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
-	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
+		return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
+	end
 end
 
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
-function Volumizer:PLAYER_ENTERING_WORLD()
-	self:SetFrameStrata("DIALOG")
-	self:SetBackdrop(GameTooltip:GetBackdrop())
-	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
-	self:SetBackdropColor(GameTooltip:GetBackdropColor())
-	self:SetWidth(175)
-	self:SetHeight(205)
-	self:EnableMouse(true)
-	self:Hide()
-	tinsert(UISpecialFrames, "VolumizerPanel")
+do
+	local pairs = _G.pairs
 
-	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
-	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
-	local old_x, old_y, click_time
-	WorldFrame:SetScript("OnMouseDown", function(frame, ...)
-		old_x, old_y = GetCursorPosition()
-		click_time = GetTime()
-		if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
-	end)
+	function Volumizer:PLAYER_ENTERING_WORLD()
+		self:SetFrameStrata("DIALOG")
+		self:SetBackdrop(GameTooltip:GetBackdrop())
+		self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
+		self:SetBackdropColor(GameTooltip:GetBackdropColor())
+		self:SetWidth(175)
+		self:SetHeight(205)
+		self:EnableMouse(true)
+		self:Hide()
+		tinsert(UISpecialFrames, "VolumizerPanel")
 
-	WorldFrame:SetScript("OnMouseUp", function(frame, ...)
-		local x, y = GetCursorPosition()
-		if not old_x or not old_y or not x or not y or not click_time then
-			self:Hide()
-			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-			return
+		local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+		local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+		local old_x, old_y, click_time
+		WorldFrame:SetScript("OnMouseDown",
+				     function(frame, ...)
+					     old_x, old_y = GetCursorPosition()
+					     click_time = GetTime()
+					     if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+				     end)
+
+		WorldFrame:SetScript("OnMouseUp",
+				     function(frame, ...)
+					     local x, y = GetCursorPosition()
+					     if not old_x or not old_y or not x or not y or not click_time then
+						     self:Hide()
+						     if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+						     return
+					     end
+					     if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
+						     self:Hide()
+					     end
+					     if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+				     end)
+
+		local relative = self
+		local widget
+		for k, v in pairs(info) do
+			widget = MakeControl(k, relative)
+			relative = widget
 		end
-		if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
-			self:Hide()
+		relative = MakeContainer(relative, -10)	-- Blank space in panel.
+
+		for k, v in pairs(toggle) do
+			widget = MakeToggle(k, relative)
+			relative = widget
 		end
-		if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-	end)
 
-	local relative = self
-	local widget
-	for k, v in pairs(info) do
-		widget = MakeControl(k, relative)
-		relative = widget
+		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+		self.PLAYER_ENTERING_WORLD = nil
+		DataObj:UpdateText()
 	end
-	relative = MakeContainer(relative, -10)	-- Blank space in panel.
-
-	for k, v in pairs(toggle) do
-		widget = MakeToggle(k, relative)
-		relative = widget
-	end
-
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-	self.PLAYER_ENTERING_WORLD = nil
-	DataObj:UpdateText()
 end
 
 function Volumizer:Toggle(anchor)
@@ -275,14 +299,14 @@ function DataObj:OnEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
 	GameTooltip:ClearLines()
-	GameTooltip:AddLine("Click to display controls.")
+	GameTooltip:AddLine("Click to show or hide the control panel.")
 	GameTooltip:Show()
 end
 
 function DataObj:OnLeave() GameTooltip:Hide() end
 
 function DataObj:UpdateText()
-	self.text = string.format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
+	self.text = format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
 end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
