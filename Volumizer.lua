@@ -32,7 +32,8 @@ local info = {
 		Volume		= AudioOptionsSoundPanelAmbienceVolume,
 		EnableCVar	= "Sound_EnableAmbience",
 		Enable		= AudioOptionsSoundPanelAmbientSounds,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE
+		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE,
+		Default		= 0.6
 	},
 	["music"] = {
 		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
@@ -40,7 +41,8 @@ local info = {
 		Volume		= AudioOptionsSoundPanelMusicVolume,
 		EnableCVar	= "Sound_EnableMusic",
 		Enable		= AudioOptionsSoundPanelMusic,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC
+		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC,
+		Default		= 0.4
 	},
 	["master"] = {
 		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
@@ -48,7 +50,8 @@ local info = {
 		Volume		= AudioOptionsSoundPanelMasterVolume,
 		EnableCVar	= "Sound_EnableAllSounds",
 		Enable		= AudioOptionsSoundPanelEnableSound,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND
+		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND,
+		Default		= 1.0
 	},
 	["sfx"]	= {
 		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
@@ -56,7 +59,8 @@ local info = {
 		Volume		= AudioOptionsSoundPanelSoundVolume,
 		EnableCVar	= "Sound_EnableSFX",
 		Enable		= AudioOptionsSoundPanelSoundEffects,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUNDFX
+		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUNDFX,
+		Default		= 1.0
 	}
 }
 
@@ -65,25 +69,29 @@ local toggle = {
 		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
 		EnableCVar	= "Sound_EnableErrorSpeech",
 		Enable		= AudioOptionsSoundPanelErrorSpeech,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH
+		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
+		Default		= 1
 	},
 	["emote"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
 		EnableCVar	= "Sound_EnableEmoteSounds",
 		Enable		= AudioOptionsSoundPanelEmoteSounds,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS
+		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
+		Default		= 1
 	},
 	["loop"] = {
 		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
 		Enable		= AudioOptionsSoundPanelLoopMusic,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING
+		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
+		Default		= 0
 	},
 	["background"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
 		Enable		= AudioOptionsSoundPanelSoundInBG,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND
+		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND,
+		Default		= 0
 	},
 }
 
@@ -235,7 +243,7 @@ do
 		self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
 		self:SetBackdropColor(GameTooltip:GetBackdropColor())
 		self:SetWidth(175)
-		self:SetHeight(205)
+		self:SetHeight(225)
 		self:EnableMouse(true)
 		self:Hide()
 		tinsert(UISpecialFrames, "VolumizerPanel")
@@ -276,6 +284,20 @@ do
 			widget = MakeToggle(k, relative)
 			relative = widget
 		end
+		relative = MakeContainer(relative, -20)	-- Blank space in panel.
+
+		widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
+		widget:SetWidth(20)
+		widget:SetHeight(20)
+		widget:SetPoint("RIGHT")
+		widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
+		widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
+		widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
+		widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+
+		local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("RIGHT", widget, "LEFT")
+		text:SetText("Presets")
 
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 		self.PLAYER_ENTERING_WORLD = nil
