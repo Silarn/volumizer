@@ -13,6 +13,18 @@ local DataObj = LDB:NewDataObject("Volumizer", {
 	icon	= "Interface\\COMMON\\VoiceChat-Speaker-Small",
 })
 
+local DropDown = CreateFrame("Frame", "Volumizer_DropDown")
+DropDown.displayMode = "MENU"
+DropDown.point = "TOPLEFT"
+DropDown.relativePoint = "TOPRIGHT"
+DropDown.info = {}
+DropDown.levelADjust = 0
+DropDown.HideMenu = function()
+			    if UIDROPDOWNMENU_OPEN_MENU == DropDown then
+				    CloseDropDownMenus()
+			    end
+		    end
+
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
@@ -25,6 +37,78 @@ local CreateFrame = _G.CreateFrame
 -------------------------------------------------------------------------------
 -- Local variables
 -------------------------------------------------------------------------------
+local default_presets = {
+	["default"] = {
+		["ambience"]	= {
+			["volume"] = 0.6,
+			["enable"] = 1
+		},
+		["music"]	= {
+			["volume"] = 0.4,
+			["enable"] = 1
+		},
+		["master"]	= {
+			["volume"] = 1.0,
+			["enable"] = 1
+		},
+		["sfx"]		= {
+			["volume"] = 1.0,
+			["enable"] = 1
+		},
+		["error"]	= 1,
+		["emote"]	= 1,
+		["loop"]	= 0,
+		["background"]	= 0
+	}
+}
+local my_presets = {
+	["Raid"] = {
+		["ambience"]	= {
+			["volume"] = 0.2,
+			["enable"] = 1
+		},
+		["music"]	= {
+			["volume"] = 0.3,
+			["enable"] = 0
+		},
+		["master"]	= {
+			["volume"] = 0.5,
+			["enable"] = 1
+		},
+		["sfx"]		= {
+			["volume"] = 0.3,
+			["enable"] = 1
+		},
+		["error"]	= 1,
+		["emote"]	= 0,
+		["loop"]	= 0,
+		["background"]	= 1
+	},
+	["Solo"] = {
+		["ambience"]	= {
+			["volume"] = 0.5,
+			["enable"] = 1
+		},
+		["music"]	= {
+			["volume"] = 0.6,
+			["enable"] = 1
+		},
+		["master"]	= {
+			["volume"] = 0.8,
+			["enable"] = 1
+		},
+		["sfx"]		= {
+			["volume"] = 0.5,
+			["enable"] = 1
+		},
+		["error"]	= 1,
+		["emote"]	= 1,
+		["loop"]	= 0,
+		["background"]	= 0
+	}
+}
+local presets = VolumizerPresets or my_presets
+
 local info = {
 	["ambience"] = {
 		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
@@ -33,7 +117,6 @@ local info = {
 		EnableCVar	= "Sound_EnableAmbience",
 		Enable		= AudioOptionsSoundPanelAmbientSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE,
-		Default		= 0.6
 	},
 	["music"] = {
 		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
@@ -42,16 +125,14 @@ local info = {
 		EnableCVar	= "Sound_EnableMusic",
 		Enable		= AudioOptionsSoundPanelMusic,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC,
-		Default		= 0.4
 	},
 	["master"] = {
 		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
 		VolumeCVar	= "Sound_MasterVolume",
 		Volume		= AudioOptionsSoundPanelMasterVolume,
-		EnableCVar	= "Sound_EnableAllSounds",
+		EnableCVar	= "Sound_EnableAllSound",
 		Enable		= AudioOptionsSoundPanelEnableSound,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND,
-		Default		= 1.0
 	},
 	["sfx"]	= {
 		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
@@ -60,7 +141,6 @@ local info = {
 		EnableCVar	= "Sound_EnableSFX",
 		Enable		= AudioOptionsSoundPanelSoundEffects,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUNDFX,
-		Default		= 1.0
 	}
 }
 
@@ -70,28 +150,24 @@ local toggle = {
 		EnableCVar	= "Sound_EnableErrorSpeech",
 		Enable		= AudioOptionsSoundPanelErrorSpeech,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
-		Default		= 1
 	},
 	["emote"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
 		EnableCVar	= "Sound_EnableEmoteSounds",
 		Enable		= AudioOptionsSoundPanelEmoteSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
-		Default		= 1
 	},
 	["loop"] = {
 		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
 		Enable		= AudioOptionsSoundPanelLoopMusic,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
-		Default		= 0
 	},
 	["background"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
 		Enable		= AudioOptionsSoundPanelSoundInBG,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND,
-		Default		= 0
 	},
 }
 
@@ -294,6 +370,16 @@ do
 		widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
 		widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
 		widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+		widget:SetScript("OnClick",
+			function(self, button, down)
+				if DropDown.initialize ~= Volumizer.Menu then
+					CloseDropDownMenus()
+					DropDown.initialize = Volumizer.Menu
+				end
+				DropDown.relativeTo = self
+				ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
+			end)
+		widget:SetScript("OnHide", DropDown.HideMenu)
 
 		local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("RIGHT", widget, "LEFT")
@@ -302,6 +388,48 @@ do
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 		self.PLAYER_ENTERING_WORLD = nil
 		DataObj:UpdateText()
+	end
+end
+
+local function EnablePreset(self, preset)
+	local ref = default_presets[preset] or presets[preset]
+
+	if not ref then error("The preset '"..preset.."' does not exist.") return end
+
+	for k, v in pairs(info) do
+		SetCVar(info[k].VolumeCVar, ref[k]["volume"])
+		SetCVar(info[k].EnableCVar, ref[k]["enable"])
+	end
+	for k, v in pairs(toggle) do
+		SetCVar(toggle[k].EnableCVar, ref[k])
+	end
+end
+
+local function DeletePreset(self, preset)
+end
+
+local function CreatePreset(self, preset)
+end
+
+function Volumizer.Menu(self, level)
+	if not level then return end
+	local info = DropDown.info
+	wipe(info)
+
+	if level == 1 then
+		info.text = "Reset Defaults"
+		info.func = EnablePreset
+		info.arg1 = "default"
+		info.notCheckable = 1
+		UIDropDownMenu_AddButton(info, level)
+
+		for k, v in pairs(presets) do
+			info.text = k
+			info.func = EnablePreset
+			info.arg1 = k
+			UIDropDownMenu_AddButton(info, level)
+		end
+		info.keepShownOnClick = 1
 	end
 end
 

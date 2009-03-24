@@ -3,6 +3,7 @@
 ## Notes: Volume control panel.
 ## Author: Torhal
 ## Version: @project-version@
+## SavedVariables: VolumizerPresets
 ## X-Date: @project-date-iso@
 ## X-Email: torhal-wow@googlegroups.com
 ## X-Category: Miscellaneous
