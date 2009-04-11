@@ -10,7 +10,7 @@ local DataObj = LDB:NewDataObject("Volumizer", {
 	type	= "launcher",
 	label	= "Volumizer",
 	text	= "0%",
-	icon	= "Interface\\COMMON\\VoiceChat-Speaker-Small",
+	icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER"
 })
 
 local DropDown = CreateFrame("Frame", "Volumizer_DropDown")
@@ -28,11 +28,12 @@ DropDown.HideMenu = function()
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local _G = _G
-local GameTooltip = _G.GameTooltip
-local tostring = _G.tostring
-local format = _G.string.format
-local CreateFrame = _G.CreateFrame
+local g_env = _G
+local GameTooltip = g_env.GameTooltip
+local tostring = g_env.tostring
+local format = g_env.string.format
+local CreateFrame = g_env.CreateFrame
+local pairs = g_env.pairs
 
 -------------------------------------------------------------------------------
 -- Local variables
@@ -213,8 +214,8 @@ end
 
 local MakeToggle, MakeControl
 do
-	local hooksecurefunc = _G.hooksecurefunc
-	local BlizzardOptionsPanel_GetCVarSafe = _G.BlizzardOptionsPanel_GetCVarSafe
+	local hooksecurefunc = g_env.hooksecurefunc
+	local BlizzardOptionsPanel_GetCVarSafe = g_env.BlizzardOptionsPanel_GetCVarSafe
 
 	function MakeToggle(name, relative)
 		local ref = toggle[name]
@@ -223,14 +224,17 @@ do
 		check:SetPoint("LEFT", container, "LEFT")
 		check:SetChecked(ref.Enable:GetValue())
 		check:SetHitRectInsets(-10, -150, 0, 0)
-		check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+		check:SetScript("OnClick",
+				function(checkButton)
+					ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+				end)
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
 
 		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
-		text:SetText(_G[ref.SoundOption.text])
+		text:SetText(g_env[ref.SoundOption.text])
 
 		hooksecurefunc("SetCVar",
 			       function(cvar, value)
@@ -247,7 +251,10 @@ do
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
 		check:SetChecked(ref.Enable:GetValue())
-		check:SetScript("OnClick", function(checkButton) ref.Enable:SetValue(check:GetChecked() and 1 or 0) end)
+		check:SetScript("OnClick",
+				function(checkButton)
+					ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+				end)
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
@@ -266,12 +273,12 @@ do
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-		slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+		slider.text:SetText(format("%s %d%%", g_env[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
 
 		slider:SetScript("OnValueChanged",
 				 function(slider, value)
 					 ref.Volume:SetValue(value)
-					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+					 slider.text:SetText(format("%s %d%%", g_env[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
 					 if (ref == info["master"]) then
 						 DataObj:UpdateText()
 					 end
@@ -283,6 +290,13 @@ do
 					       slider:SetValue(value)
 				       elseif cvar == ref.EnableCVar then
 					       check:SetChecked(value)
+					       if (ref == info["master"]) then
+						       if tonumber(value) == 1 then
+							       DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+						       else
+							       DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+						       end
+					       end
 				       end
 			       end)
 		return container
@@ -291,7 +305,7 @@ end
 
 local GetAnchor
 do
-	local UIParent = UIParent
+	local UIParent = g_env.UIParent
 
 	function GetAnchor(frame)
 		if not frame then return "CENTER", UIParent, 0, 0 end
@@ -310,85 +324,89 @@ end
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
-do
-	local pairs = _G.pairs
+function Volumizer:PLAYER_ENTERING_WORLD()
+	self:SetFrameStrata("DIALOG")
+	self:SetBackdrop(GameTooltip:GetBackdrop())
+	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
+	self:SetBackdropColor(GameTooltip:GetBackdropColor())
+	self:SetWidth(175)
+	self:SetHeight(225)
+	self:EnableMouse(true)
+	self:Hide()
+	tinsert(UISpecialFrames, "VolumizerPanel")
 
-	function Volumizer:PLAYER_ENTERING_WORLD()
-		self:SetFrameStrata("DIALOG")
-		self:SetBackdrop(GameTooltip:GetBackdrop())
-		self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
-		self:SetBackdropColor(GameTooltip:GetBackdropColor())
-		self:SetWidth(175)
-		self:SetHeight(225)
-		self:EnableMouse(true)
-		self:Hide()
-		tinsert(UISpecialFrames, "VolumizerPanel")
+	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+	local old_x, old_y, click_time
+	WorldFrame:SetScript("OnMouseDown",
+		function(frame, ...)
+			old_x, old_y = GetCursorPosition()
+			click_time = GetTime()
+			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+		end)
 
-		local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
-		local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
-		local old_x, old_y, click_time
-		WorldFrame:SetScript("OnMouseDown",
-				     function(frame, ...)
-					     old_x, old_y = GetCursorPosition()
-					     click_time = GetTime()
-					     if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
-				     end)
+	WorldFrame:SetScript("OnMouseUp",
+		function(frame, ...)
+			local x, y = GetCursorPosition()
+			if not old_x or not old_y or not x or not y or not click_time then
+				self:Hide()
+				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+				return
+			end
+			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
+				self:Hide()
+			end
+			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+		end)
 
-		WorldFrame:SetScript("OnMouseUp",
-				     function(frame, ...)
-					     local x, y = GetCursorPosition()
-					     if not old_x or not old_y or not x or not y or not click_time then
-						     self:Hide()
-						     if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-						     return
-					     end
-					     if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
-						     self:Hide()
-					     end
-					     if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-				     end)
-
-		local relative = self
-		local widget
-		for k, v in pairs(info) do
-			widget = MakeControl(k, relative)
-			relative = widget
-		end
-		relative = MakeContainer(relative, -10)	-- Blank space in panel.
-
-		for k, v in pairs(toggle) do
-			widget = MakeToggle(k, relative)
-			relative = widget
-		end
-		relative = MakeContainer(relative, -20)	-- Blank space in panel.
-
-		widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
-		widget:SetWidth(20)
-		widget:SetHeight(20)
-		widget:SetPoint("RIGHT")
-		widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
-		widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
-		widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
-		widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
-		widget:SetScript("OnClick",
-			function(self, button, down)
-				if DropDown.initialize ~= Volumizer.Menu then
-					CloseDropDownMenus()
-					DropDown.initialize = Volumizer.Menu
-				end
-				DropDown.relativeTo = self
-				ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
-			end)
-		widget:SetScript("OnHide", DropDown.HideMenu)
-
-		local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-		text:SetPoint("RIGHT", widget, "LEFT")
-		text:SetText("Presets")
-
-		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-		self.PLAYER_ENTERING_WORLD = nil
-		DataObj:UpdateText()
+	local relative = self
+	local widget
+	for k, v in pairs(info) do
+		widget = MakeControl(k, relative)
+		relative = widget
 	end
+	relative = MakeContainer(relative, -10)	-- Blank space in panel.
+
+	for k, v in pairs(toggle) do
+		widget = MakeToggle(k, relative)
+		relative = widget
+	end
+	relative = MakeContainer(relative, -20)	-- Blank space in panel.
+
+	widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
+	widget:SetWidth(20)
+	widget:SetHeight(20)
+	widget:SetPoint("RIGHT")
+	widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
+	widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
+	widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
+	widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+	widget:SetScript("OnClick",
+		function(self, button, down)
+			if DropDown.initialize ~= Volumizer.Menu then
+				CloseDropDownMenus()
+				DropDown.initialize = Volumizer.Menu
+			end
+			DropDown.relativeTo = self
+			ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
+		end)
+	widget:SetScript("OnHide", DropDown.HideMenu)
+
+	local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	text:SetPoint("RIGHT", widget, "LEFT")
+	text:SetText("Presets")
+
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	self.PLAYER_ENTERING_WORLD = nil
+
+	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
+
+	if enabled == 1 then
+		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+	else
+		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+	end
+	DataObj:UpdateText()
 end
 
 local function EnablePreset(self, preset)
@@ -417,19 +435,36 @@ function Volumizer.Menu(self, level)
 	wipe(info)
 
 	if level == 1 then
-		info.text = "Reset Defaults"
-		info.func = EnablePreset
-		info.arg1 = "default"
-		info.notCheckable = 1
-		UIDropDownMenu_AddButton(info, level)
-
 		for k, v in pairs(presets) do
 			info.text = k
 			info.func = EnablePreset
 			info.arg1 = k
 			UIDropDownMenu_AddButton(info, level)
 		end
-		info.keepShownOnClick = 1
+		wipe(info)
+		info.disabled = true
+		UIDropDownMenu_AddButton(info, level)
+		info.disabled = nil
+
+		info.text = "Reset Defaults"
+		info.func = EnablePreset
+		info.arg1 = "default"
+		info.colorCode = "|cffffff00"
+		UIDropDownMenu_AddButton(info, level)
+
+		info.keepShownOnClick = true
+		info.text = "New Preset"
+		info.func = CreatePreset
+		info.arg1 = nil
+		info.hasArrow = true
+		UIDropDownMenu_AddButton(info, level)
+
+		info.text = "Remove Preset"
+
+		info.func = DeletePreset
+		info.arg1 = nil
+		info.hasArrow = true
+		UIDropDownMenu_AddButton(info, level)
 	end
 end
 
@@ -461,6 +496,6 @@ end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-_G.SLASH_Volumizer1 = "/volumizer"
-_G.SLASH_Volumizer2 = "/vol"
-SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
+g_env.SLASH_Volumizer1 = "/volumizer"
+g_env.SLASH_Volumizer2 = "/vol"
+g_env.SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
