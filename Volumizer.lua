@@ -36,79 +36,63 @@ local CreateFrame = g_env.CreateFrame
 local pairs = g_env.pairs
 
 -------------------------------------------------------------------------------
+-- Constants
+-------------------------------------------------------------------------------
+local NUM_PRESETS = 5
+
+-------------------------------------------------------------------------------
 -- Local variables
 -------------------------------------------------------------------------------
-local default_presets = {
-	["default"] = {
-		["ambience"]	= {
-			["volume"] = 0.6,
-			["enable"] = 1
-		},
-		["music"]	= {
-			["volume"] = 0.4,
-			["enable"] = 1
-		},
-		["master"]	= {
-			["volume"] = 1.0,
-			["enable"] = 1
-		},
-		["sfx"]		= {
-			["volume"] = 1.0,
-			["enable"] = 1
-		},
-		["error"]	= 1,
-		["emote"]	= 1,
-		["loop"]	= 0,
-		["background"]	= 0
-	}
-}
-local my_presets = {
-	["Raid"] = {
-		["ambience"]	= {
-			["volume"] = 0.2,
-			["enable"] = 1
-		},
-		["music"]	= {
-			["volume"] = 0.3,
-			["enable"] = 0
-		},
-		["master"]	= {
-			["volume"] = 0.5,
-			["enable"] = 1
-		},
-		["sfx"]		= {
-			["volume"] = 0.3,
-			["enable"] = 1
-		},
-		["error"]	= 1,
-		["emote"]	= 0,
-		["loop"]	= 0,
-		["background"]	= 1
+local default_preset_values = {
+	["ambience"]	= {
+		["volume"] = 0.6,
+		["enable"] = 1
 	},
-	["Solo"] = {
-		["ambience"]	= {
-			["volume"] = 0.5,
-			["enable"] = 1
-		},
-		["music"]	= {
-			["volume"] = 0.6,
-			["enable"] = 1
-		},
-		["master"]	= {
-			["volume"] = 0.8,
-			["enable"] = 1
-		},
-		["sfx"]		= {
-			["volume"] = 0.5,
-			["enable"] = 1
-		},
-		["error"]	= 1,
-		["emote"]	= 1,
-		["loop"]	= 0,
-		["background"]	= 0
-	}
+	["music"]	= {
+		["volume"] = 0.4,
+		["enable"] = 1
+	},
+	["master"]	= {
+		["volume"] = 1.0,
+		["enable"] = 1
+	},
+	["sfx"]		= {
+		["volume"] = 1.0,
+		["enable"] = 1
+	},
+	["error"]	= 1,
+	["emote"]	= 1,
+	["loop"]	= 0,
+	["background"]	= 0
 }
-local presets = VolumizerPresets or my_presets
+
+local default_presets = {
+	[1] = {
+		["name"] = "Preset 1",
+		["values"] = default_preset_values,
+	},
+	[2] = {
+		["name"] = "Preset 2",
+		["values"] = default_preset_values,
+	},
+	[3] = {
+		["name"] = "Preset 3",
+		["values"] = default_preset_values,
+	},
+	[4] = {
+		["name"] = "Preset 4",
+		["values"] = default_preset_values,
+	},
+	[5] = {
+		["name"] = "Preset 5",
+		["values"] = default_preset_values,
+	},
+	[6] = {
+		["name"] = DEFAULT,
+		["values"] = default_preset_values
+	},
+}
+VolumizerPresets = VolumizerPresets or default_presets
 
 local info = {
 	["ambience"] = {
@@ -207,7 +191,8 @@ local function MakeContainer(relative, dist)
 	local container = CreateFrame("Frame", nil, Volumizer)
 	container:SetWidth(155)
 	container:SetHeight(40)
-	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -10 or (relative and dist or -30))
+--	container:SetPoint("TOP", relative, 0, (relative and dist or -30))
+	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -22 or (relative and dist or -30))
 
 	return container
 end
@@ -325,39 +310,44 @@ end
 -- Main AddOn functions
 -------------------------------------------------------------------------------
 function Volumizer:PLAYER_ENTERING_WORLD()
-	self:SetFrameStrata("DIALOG")
-	self:SetBackdrop(GameTooltip:GetBackdrop())
-	self:SetBackdropBorderColor(GameTooltip:GetBackdropBorderColor())
-	self:SetBackdropColor(GameTooltip:GetBackdropColor())
-	self:SetWidth(175)
-	self:SetHeight(225)
+	-----------------------------------------------------------------------
+	-- Main panel setup
+	-----------------------------------------------------------------------
+	self:SetFrameStrata("FULLSCREEN_DIALOG")
+	self:SetBackdrop({
+				 bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+				 edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+				 tile = true, tileSize = 32, edgeSize = 32,
+				 insets = { left = 11, right = 12, top = 12, bottom = 11 }
+			 })
+	self:SetBackdropBorderColor(TOOLTIP_DEFAULT_COLOR.r, TOOLTIP_DEFAULT_COLOR.g, TOOLTIP_DEFAULT_COLOR.b)
+	self:SetBackdropColor(TOOLTIP_DEFAULT_BACKGROUND_COLOR.r, TOOLTIP_DEFAULT_BACKGROUND_COLOR.g, TOOLTIP_DEFAULT_BACKGROUND_COLOR.b)
+	self:SetWidth(180)
+	self:SetHeight(245)
 	self:EnableMouse(true)
 	self:Hide()
-	tinsert(UISpecialFrames, "VolumizerPanel")
 
-	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
-	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
-	local old_x, old_y, click_time
-	WorldFrame:SetScript("OnMouseDown",
-		function(frame, ...)
-			old_x, old_y = GetCursorPosition()
-			click_time = GetTime()
-			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
-		end)
+	local titlebox = CreateFrame("Frame", nil, Volumizer)
+	titlebox:SetBackdrop({
+				     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+				     edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+				     tile = true, tileSize = 24, edgeSize = 24,
+				     insets = { left = 6, right = 7, top = 7, bottom = 6 }
+			     })
+	titlebox:SetBackdropColor(255, 255, 255, 1)
+	titlebox:SetWidth(84)
+	titlebox:SetHeight(30)
+	titlebox:SetPoint("TOP", self, "TOP", 0, 10)
 
-	WorldFrame:SetScript("OnMouseUp",
-		function(frame, ...)
-			local x, y = GetCursorPosition()
-			if not old_x or not old_y or not x or not y or not click_time then
-				self:Hide()
-				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-				return
-			end
-			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
-				self:Hide()
-			end
-			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-		end)
+--	local title = titlebox:CreateTexture(nil, "ARTWORK")
+--	title:SetTexture("Interface\DialogFrame\UI-DialogBox-Header")
+--	title:SetWidth(80)
+--	title:SetHeight(35)
+--	title:SetAllPoints(titlebox)
+
+	local text = titlebox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	text:SetPoint("TOP", titlebox, "TOP", 0, -9)
+	text:SetText("Volumizer")
 
 	local relative = self
 	local widget
@@ -399,6 +389,38 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	self.PLAYER_ENTERING_WORLD = nil
 
+	-----------------------------------------------------------------------
+	-- Frame interaction with keyboard/mouse
+	-----------------------------------------------------------------------
+	tinsert(UISpecialFrames, "VolumizerPanel")
+
+	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+	local old_x, old_y, click_time
+	WorldFrame:SetScript("OnMouseDown",
+		function(frame, ...)
+			old_x, old_y = GetCursorPosition()
+			click_time = GetTime()
+			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+		end)
+
+	WorldFrame:SetScript("OnMouseUp",
+		function(frame, ...)
+			local x, y = GetCursorPosition()
+			if not old_x or not old_y or not x or not y or not click_time then
+				self:Hide()
+				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+				return
+			end
+			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
+				self:Hide()
+			end
+			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+		end)
+
+	-----------------------------------------------------------------------
+	-- LDB Icon initial display
+	-----------------------------------------------------------------------
 	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
 
 	if enabled == 1 then
@@ -410,23 +432,17 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 end
 
 local function EnablePreset(self, preset)
-	local ref = default_presets[preset] or presets[preset]
+	local ref = VolumizerPresets[preset]
 
 	if not ref then error("The preset '"..preset.."' does not exist.") return end
 
 	for k, v in pairs(info) do
-		SetCVar(info[k].VolumeCVar, ref[k]["volume"])
-		SetCVar(info[k].EnableCVar, ref[k]["enable"])
+		SetCVar(info[k].VolumeCVar, ref.values[k].volume)
+		SetCVar(info[k].EnableCVar, ref.values[k].enable)
 	end
 	for k, v in pairs(toggle) do
-		SetCVar(toggle[k].EnableCVar, ref[k])
+		SetCVar(toggle[k].EnableCVar, ref.values[k])
 	end
-end
-
-local function DeletePreset(self, preset)
-end
-
-local function CreatePreset(self, preset)
 end
 
 function Volumizer.Menu(self, level)
@@ -435,35 +451,23 @@ function Volumizer.Menu(self, level)
 	wipe(info)
 
 	if level == 1 then
-		for k, v in pairs(presets) do
-			info.text = k
-			info.func = EnablePreset
-			info.arg1 = k
-			UIDropDownMenu_AddButton(info, level)
+		for k, v in ipairs(VolumizerPresets) do
+			if v.name ~= DEFAULT then
+				info.text = v.name
+				info.func = EnablePreset
+				info.arg1 = k
+				UIDropDownMenu_AddButton(info, level)
+			end
 		end
 		wipe(info)
 		info.disabled = true
 		UIDropDownMenu_AddButton(info, level)
 		info.disabled = nil
 
-		info.text = "Reset Defaults"
+		info.text = DEFAULTS
 		info.func = EnablePreset
-		info.arg1 = "default"
+		info.arg1 = NUM_PRESETS + 1
 		info.colorCode = "|cffffff00"
-		UIDropDownMenu_AddButton(info, level)
-
-		info.keepShownOnClick = true
-		info.text = "New Preset"
-		info.func = CreatePreset
-		info.arg1 = nil
-		info.hasArrow = true
-		UIDropDownMenu_AddButton(info, level)
-
-		info.text = "Remove Preset"
-
-		info.func = DeletePreset
-		info.arg1 = nil
-		info.hasArrow = true
 		UIDropDownMenu_AddButton(info, level)
 	end
 end
@@ -491,7 +495,7 @@ end
 function DataObj:OnLeave() GameTooltip:Hide() end
 
 function DataObj:UpdateText()
-	self.text = format("%d%%", tostring(info["master"].Volume:GetValue() * 100))
+	self.text = format("%d%%", tostring(info.master.Volume:GetValue() * 100))
 end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
