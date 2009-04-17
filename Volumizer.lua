@@ -1,4 +1,15 @@
 -------------------------------------------------------------------------------
+-- Localized globals
+-------------------------------------------------------------------------------
+local tostring = tostring
+local format = string.format
+local pairs = pairs
+
+local CreateFrame = CreateFrame
+local GameTooltip = GameTooltip
+local UIParent = UIParent
+
+-------------------------------------------------------------------------------
 -- Addon namespace
 -------------------------------------------------------------------------------
 local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
@@ -24,16 +35,9 @@ DropDown.HideMenu = function()
 				    CloseDropDownMenus()
 			    end
 		    end
-
--------------------------------------------------------------------------------
--- Localized globals
--------------------------------------------------------------------------------
-local g_env = _G
-local GameTooltip = g_env.GameTooltip
-local tostring = g_env.tostring
-local format = g_env.string.format
-local CreateFrame = g_env.CreateFrame
-local pairs = g_env.pairs
+DropDown.UncheckHack = function(button)
+			       _G[button:GetName().."Check"]:Hide()
+		       end
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -191,7 +195,6 @@ local function MakeContainer(relative, dist)
 	local container = CreateFrame("Frame", nil, Volumizer)
 	container:SetWidth(155)
 	container:SetHeight(40)
---	container:SetPoint("TOP", relative, 0, (relative and dist or -30))
 	container:SetPoint("TOP", relative, 0, (relative == Volumizer) and -22 or (relative and dist or -30))
 
 	return container
@@ -199,8 +202,8 @@ end
 
 local MakeToggle, MakeControl
 do
-	local hooksecurefunc = g_env.hooksecurefunc
-	local BlizzardOptionsPanel_GetCVarSafe = g_env.BlizzardOptionsPanel_GetCVarSafe
+	local hooksecurefunc = hooksecurefunc
+	local BlizzardOptionsPanel_GetCVarSafe = BlizzardOptionsPanel_GetCVarSafe
 
 	function MakeToggle(name, relative)
 		local ref = toggle[name]
@@ -219,7 +222,7 @@ do
 
 		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
-		text:SetText(g_env[ref.SoundOption.text])
+		text:SetText(_G[ref.SoundOption.text])
 
 		hooksecurefunc("SetCVar",
 			       function(cvar, value)
@@ -258,12 +261,12 @@ do
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-		slider.text:SetText(format("%s %d%%", g_env[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+		slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
 
 		slider:SetScript("OnValueChanged",
 				 function(slider, value)
 					 ref.Volume:SetValue(value)
-					 slider.text:SetText(format("%s %d%%", g_env[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
 					 if (ref == info["master"]) then
 						 DataObj:UpdateText()
 					 end
@@ -288,22 +291,17 @@ do
 	end
 end
 
-local GetAnchor
-do
-	local UIParent = g_env.UIParent
+function GetAnchor(frame)
+	if not frame then return "CENTER", UIParent, 0, 0 end
 
-	function GetAnchor(frame)
-		if not frame then return "CENTER", UIParent, 0, 0 end
+	local x,y = frame:GetCenter()
 
-		local x,y = frame:GetCenter()
+	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
 
-		if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
+	local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
+	local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
 
-		local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
-		local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
-
-		return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
-	end
+	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 end
 
 -------------------------------------------------------------------------------
@@ -338,12 +336,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	titlebox:SetWidth(84)
 	titlebox:SetHeight(30)
 	titlebox:SetPoint("TOP", self, "TOP", 0, 10)
-
---	local title = titlebox:CreateTexture(nil, "ARTWORK")
---	title:SetTexture("Interface\DialogFrame\UI-DialogBox-Header")
---	title:SetWidth(80)
---	title:SetHeight(35)
---	title:SetAllPoints(titlebox)
 
 	local text = titlebox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	text:SetPoint("TOP", titlebox, "TOP", 0, -9)
@@ -390,6 +382,33 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self.PLAYER_ENTERING_WORLD = nil
 
 	-----------------------------------------------------------------------
+	-- Static popup initialization
+	-----------------------------------------------------------------------
+	local function OnRenamePreset(self)
+		local text = _G[self:GetParent():GetName().."EditBox"]:GetText()
+
+		if text == "" then text = nil end
+		_G[self:GetParent():GetName().."EditBox"]:SetText("")
+
+		VolumizerPresets[Volumizer.renaming].name = text
+		self:GetParent():Hide()
+	end
+
+	StaticPopupDialogs["Volumizer_RenamePreset"] = {
+		text = ERR_NAME_NO_NAME,
+		button1 = TEXT(YES),
+		button2 = TEXT(CANCEL),
+		OnAccept = OnRenamePreset,
+		EditBoxOnEnterPressed = OnRenamePreset,
+		EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+		timeout = 0,
+		hideOnEscape = 1,
+		exclusive = 1,
+		whileDead = 1,
+		hasEditBox = 1
+	}
+
+	-----------------------------------------------------------------------
 	-- Frame interaction with keyboard/mouse
 	-----------------------------------------------------------------------
 	tinsert(UISpecialFrames, "VolumizerPanel")
@@ -431,7 +450,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	DataObj:UpdateText()
 end
 
-local function EnablePreset(self, preset)
+local function UsePreset(self, preset)
 	local ref = VolumizerPresets[preset]
 
 	if not ref then error("The preset '"..preset.."' does not exist.") return end
@@ -445,6 +464,27 @@ local function EnablePreset(self, preset)
 	end
 end
 
+local function SavePreset(self, preset)
+	local ref = VolumizerPresets[preset]
+
+	if not ref then error("The preset '"..preset.."' does not exist.") return end
+
+	for k, v in pairs(info) do
+		ref.values[k].volume = GetCVar(info[k].VolumeCVar)
+		ref.values[k].enable = GetCVar(info[k].EnableCVar)
+	end
+	for k, v in pairs(toggle) do
+		ref.values[k] = GetCVar(toggle[k].EnableCVar)
+	end
+	VolumizerPresets[preset] = ref
+end
+
+local function RenamePreset_Popup(self, preset)
+	Volumizer.renaming = preset
+	StaticPopup_Show("Volumizer_RenamePreset")
+	CloseDropDownMenus(1)
+end
+
 function Volumizer.Menu(self, level)
 	if not level then return end
 	local info = DropDown.info
@@ -454,21 +494,39 @@ function Volumizer.Menu(self, level)
 		for k, v in ipairs(VolumizerPresets) do
 			if v.name ~= DEFAULT then
 				info.text = v.name
-				info.func = EnablePreset
-				info.arg1 = k
+				info.value = k
+				info.hasArrow = true
+				info.notCheckable = 1
+				info.keepShownOnClick = 1
+				info.func = DropDown.UncheckHack
 				UIDropDownMenu_AddButton(info, level)
 			end
 		end
-		wipe(info)
+		wipe(info)		-- Blank space in menu.
 		info.disabled = true
 		UIDropDownMenu_AddButton(info, level)
 		info.disabled = nil
 
 		info.text = DEFAULTS
-		info.func = EnablePreset
+		info.func = UsePreset
 		info.arg1 = NUM_PRESETS + 1
 		info.colorCode = "|cffffff00"
 		UIDropDownMenu_AddButton(info, level)
+	elseif level == 2 then
+			wipe(info)
+			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
+
+			info.text = USE
+			info.func = UsePreset
+			UIDropDownMenu_AddButton(info, level)
+
+			info.text = SAVE
+			info.func = SavePreset
+			UIDropDownMenu_AddButton(info, level)
+
+			info.text = NAME
+			info.func = RenamePreset_Popup
+			UIDropDownMenu_AddButton(info, level)
 	end
 end
 
@@ -500,6 +558,6 @@ end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-g_env.SLASH_Volumizer1 = "/volumizer"
-g_env.SLASH_Volumizer2 = "/vol"
-g_env.SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
+SLASH_Volumizer1 = "/volumizer"
+SLASH_Volumizer2 = "/vol"
+SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
