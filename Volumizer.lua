@@ -322,23 +322,21 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetBackdropColor(TOOLTIP_DEFAULT_BACKGROUND_COLOR.r, TOOLTIP_DEFAULT_BACKGROUND_COLOR.g, TOOLTIP_DEFAULT_BACKGROUND_COLOR.b)
 	self:SetWidth(180)
 	self:SetHeight(245)
+	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:Hide()
 
-	local titlebox = CreateFrame("Frame", nil, Volumizer)
-	titlebox:SetBackdrop({
-				     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-				     edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-				     tile = true, tileSize = 24, edgeSize = 24,
-				     insets = { left = 6, right = 7, top = 7, bottom = 6 }
-			     })
-	titlebox:SetBackdropColor(255, 255, 255, 1)
-	titlebox:SetWidth(84)
-	titlebox:SetHeight(30)
-	titlebox:SetPoint("TOP", self, "TOP", 0, 10)
+	local titlebox = CreateFrame("Frame", nil, self)
+	local titlebg = self:CreateTexture(nil, "ARTWORK")
+	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+	titlebg:SetPoint("CENTER", self, "TOP", 0, -17)
+	titlebg:SetWidth(230)
+	titlebg:SetHeight(56)
+
+	titlebox:SetAllPoints(titlebg)
 
 	local text = titlebox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	text:SetPoint("TOP", titlebox, "TOP", 0, -9)
+	text:SetPoint("TOP", titlebg, "TOP", 0, -11)
 	text:SetText("Volumizer")
 
 	local relative = self
