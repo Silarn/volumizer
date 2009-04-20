@@ -1,13 +1,14 @@
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local tostring = tostring
-local format = string.format
-local pairs = pairs
+local tonumber, tostring = _G.tonumber, _G.tostring
+local format = _G.string.format
+local pairs, ipairs = _G.pairs, _G.ipairs
+local wipe = _G.wipe
 
-local CreateFrame = CreateFrame
-local GameTooltip = GameTooltip
-local UIParent = UIParent
+local CreateFrame = _G.CreateFrame
+local GameTooltip = _G.GameTooltip
+local UIParent = _G.UIParent
 
 -------------------------------------------------------------------------------
 -- Addon namespace
@@ -30,24 +31,16 @@ DropDown.point = "TOPLEFT"
 DropDown.relativePoint = "TOPRIGHT"
 DropDown.info = {}
 DropDown.levelADjust = 0
-DropDown.HideMenu = function()
-			    if UIDROPDOWNMENU_OPEN_MENU == DropDown then
-				    CloseDropDownMenus()
-			    end
+DropDown.HideMenu = function() if UIDROPDOWNMENU_OPEN_MENU == DropDown then CloseDropDownMenus() end
 		    end
-DropDown.UncheckHack = function(button)
-			       _G[button:GetName().."Check"]:Hide()
-		       end
+DropDown.UncheckHack = function(button) _G[button:GetName().."Check"]:Hide() end
 
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
 local NUM_PRESETS = 5
 
--------------------------------------------------------------------------------
--- Local variables
--------------------------------------------------------------------------------
-local default_preset_values = {
+local DEFAULT_PRESET_VALUES = {
 	["ambience"]	= {
 		["volume"] = 0.6,
 		["enable"] = 1
@@ -70,35 +63,34 @@ local default_preset_values = {
 	["background"]	= 0
 }
 
-local default_presets = {
+local INITIAL_PRESETS = {
 	[1] = {
 		["name"] = "Preset 1",
-		["values"] = default_preset_values,
+		["values"] = DEFAULT_PRESET_VALUES,
 	},
 	[2] = {
 		["name"] = "Preset 2",
-		["values"] = default_preset_values,
+		["values"] = DEFAULT_PRESET_VALUES,
 	},
 	[3] = {
 		["name"] = "Preset 3",
-		["values"] = default_preset_values,
+		["values"] = DEFAULT_PRESET_VALUES,
 	},
 	[4] = {
 		["name"] = "Preset 4",
-		["values"] = default_preset_values,
+		["values"] = DEFAULT_PRESET_VALUES,
 	},
 	[5] = {
 		["name"] = "Preset 5",
-		["values"] = default_preset_values,
-	},
-	[6] = {
-		["name"] = DEFAULT,
-		["values"] = default_preset_values
+		["values"] = DEFAULT_PRESET_VALUES,
 	},
 }
-VolumizerPresets = VolumizerPresets or default_presets
 
-local info = {
+local DEFAULT_PRESET = {
+	["values"] = DEFAULT_PRESET_VALUES
+}
+
+local VOLUMES = {
 	["ambience"] = {
 		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
 		VolumeCVar	= "Sound_AmbienceVolume",
@@ -133,7 +125,7 @@ local info = {
 	}
 }
 
-local toggle = {
+local TOGGLES = {
 	["error"] = {
 		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
 		EnableCVar	= "Sound_EnableErrorSpeech",
@@ -160,13 +152,17 @@ local toggle = {
 	},
 }
 
-
 local HorizontalSliderBG = {
 	bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
 	edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
 	edgeSize = 8, tile = true, tileSize = 8,
 	insets = {left = 3, right = 3, top = 6, bottom = 6}
 }
+
+-------------------------------------------------------------------------------
+-- Variables
+-------------------------------------------------------------------------------
+VolumizerPresets = VolumizerPresets or INITIAL_PRESETS
 
 -------------------------------------------------------------------------------
 -- Local functions
@@ -206,7 +202,7 @@ do
 	local BlizzardOptionsPanel_GetCVarSafe = BlizzardOptionsPanel_GetCVarSafe
 
 	function MakeToggle(name, relative)
-		local ref = toggle[name]
+		local ref = TOGGLES[name]
 		local container = MakeContainer(relative, -15)
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
@@ -234,7 +230,7 @@ do
 	end
 
 	function MakeControl(name, relative)
-		local ref = info[name]
+		local ref = VOLUMES[name]
 		local container = MakeContainer(relative)
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
@@ -267,7 +263,7 @@ do
 				 function(slider, value)
 					 ref.Volume:SetValue(value)
 					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
-					 if (ref == info["master"]) then
+					 if (ref == VOLUMES["master"]) then
 						 DataObj:UpdateText()
 					 end
 				 end)
@@ -278,7 +274,7 @@ do
 					       slider:SetValue(value)
 				       elseif cvar == ref.EnableCVar then
 					       check:SetChecked(value)
-					       if (ref == info["master"]) then
+					       if (ref == VOLUMES["master"]) then
 						       if tonumber(value) == 1 then
 							       DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
 						       else
@@ -291,7 +287,7 @@ do
 	end
 end
 
-function GetAnchor(frame)
+local function GetAnchor(frame)
 	if not frame then return "CENTER", UIParent, 0, 0 end
 
 	local x,y = frame:GetCenter()
@@ -341,13 +337,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 	local relative = self
 	local widget
-	for k, v in pairs(info) do
+	for k, v in pairs(VOLUMES) do
 		widget = MakeControl(k, relative)
 		relative = widget
 	end
 	relative = MakeContainer(relative, -10)	-- Blank space in panel.
 
-	for k, v in pairs(toggle) do
+	for k, v in pairs(TOGGLES) do
 		widget = MakeToggle(k, relative)
 		relative = widget
 	end
@@ -449,16 +445,16 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 end
 
 local function UsePreset(self, preset)
-	local ref = VolumizerPresets[preset]
+	local ref = (preset < 1) and DEFAULT_PRESET or VolumizerPresets[preset]
 
 	if not ref then error("The preset '"..preset.."' does not exist.") return end
 
-	for k, v in pairs(info) do
-		SetCVar(info[k].VolumeCVar, ref.values[k].volume)
-		SetCVar(info[k].EnableCVar, ref.values[k].enable)
+	for k, v in pairs(VOLUMES) do
+		SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
+		SetCVar(VOLUMES[k].EnableCVar, ref.values[k].enable)
 	end
-	for k, v in pairs(toggle) do
-		SetCVar(toggle[k].EnableCVar, ref.values[k])
+	for k, v in pairs(TOGGLES) do
+		SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
 	end
 end
 
@@ -467,12 +463,12 @@ local function SavePreset(self, preset)
 
 	if not ref then error("The preset '"..preset.."' does not exist.") return end
 
-	for k, v in pairs(info) do
-		ref.values[k].volume = GetCVar(info[k].VolumeCVar)
-		ref.values[k].enable = GetCVar(info[k].EnableCVar)
+	for k, v in pairs(VOLUMES) do
+		ref.values[k].volume = GetCVar(VOLUMES[k].VolumeCVar)
+		ref.values[k].enable = GetCVar(VOLUMES[k].EnableCVar)
 	end
-	for k, v in pairs(toggle) do
-		ref.values[k] = GetCVar(toggle[k].EnableCVar)
+	for k, v in pairs(TOGGLES) do
+		ref.values[k] = GetCVar(TOGGLES[k].EnableCVar)
 	end
 	VolumizerPresets[preset] = ref
 end
@@ -490,7 +486,7 @@ function Volumizer.Menu(self, level)
 
 	if level == 1 then
 		for k, v in ipairs(VolumizerPresets) do
-			if v.name ~= DEFAULT then
+			if k > NUM_PRESETS then VolumizerPresets[k] = nil else
 				info.text = v.name
 				info.value = k
 				info.hasArrow = true
@@ -507,7 +503,7 @@ function Volumizer.Menu(self, level)
 
 		info.text = DEFAULTS
 		info.func = UsePreset
-		info.arg1 = NUM_PRESETS + 1
+		info.arg1 = 0
 		info.colorCode = "|cffffff00"
 		UIDropDownMenu_AddButton(info, level)
 	elseif level == 2 then
@@ -551,7 +547,7 @@ end
 function DataObj:OnLeave() GameTooltip:Hide() end
 
 function DataObj:UpdateText()
-	self.text = format("%d%%", tostring(info.master.Volume:GetValue() * 100))
+	self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
 end
 
 Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
