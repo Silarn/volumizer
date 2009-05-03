@@ -19,7 +19,7 @@ Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then re
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
 local DataObj = LDB:NewDataObject("Volumizer", {
-	type	= "launcher",
+	type	= "data source",
 	label	= "Volumizer",
 	text	= "0%",
 	icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER"
@@ -59,6 +59,7 @@ local DEFAULT_PRESET_VALUES = {
 	},
 	["error"]	= 1,
 	["emote"]	= 1,
+	["pet"]		= 1,
 	["loop"]	= 0,
 	["background"]	= 0
 }
@@ -137,6 +138,12 @@ local TOGGLES = {
 		EnableCVar	= "Sound_EnableEmoteSounds",
 		Enable		= AudioOptionsSoundPanelEmoteSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
+	},
+	["pet"] = {
+		SoundOption	= SoundPanelOptions.Sound_EnablePetSounds,
+		EnableCVar	= "Sound_EnablePetSounds",
+		Enable		= AudioOptionsSoundPanelPetSounds,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
 	},
 	["loop"] = {
 		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
@@ -314,10 +321,11 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 				 tile = true, tileSize = 32, edgeSize = 32,
 				 insets = { left = 11, right = 12, top = 12, bottom = 11 }
 			 })
-	self:SetBackdropBorderColor(TOOLTIP_DEFAULT_COLOR.r, TOOLTIP_DEFAULT_COLOR.g, TOOLTIP_DEFAULT_COLOR.b)
-	self:SetBackdropColor(TOOLTIP_DEFAULT_BACKGROUND_COLOR.r, TOOLTIP_DEFAULT_BACKGROUND_COLOR.g, TOOLTIP_DEFAULT_BACKGROUND_COLOR.b)
+	local def_col, def_bg_col = TOOLTIP_DEFAULT_COLOR, TOOLTIP_DEFAULT_BACKGROUND_COLOR
+	self:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
+	self:SetBackdropColor(def_bg_col.r, def_bg_col.g, def_bg_col.b)
 	self:SetWidth(180)
-	self:SetHeight(245)
+	self:SetHeight(260)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:Hide()
@@ -540,7 +548,7 @@ function DataObj:OnEnter()
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
 	GameTooltip:ClearLines()
-	GameTooltip:AddLine("Click to show or hide the control panel.")
+	GameTooltip:AddLine(CLICK_FOR_DETAILS)
 	GameTooltip:Show()
 end
 
