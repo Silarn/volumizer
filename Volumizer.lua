@@ -1,14 +1,15 @@
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local tonumber, tostring = _G.tonumber, _G.tostring
-local format = _G.string.format
-local pairs, ipairs = _G.pairs, _G.ipairs
-local wipe = _G.wipe
+local tonumber, tostring = tonumber, tostring
+local format = string.format
+local pairs, ipairs = pairs, ipairs
+local wipe = wipe
 
-local CreateFrame = _G.CreateFrame
-local GameTooltip = _G.GameTooltip
-local UIParent = _G.UIParent
+local CreateFrame = CreateFrame
+local GameTooltip = GameTooltip
+local UIParent = UIParent
+local def_col, def_bg_col = TOOLTIP_DEFAULT_COLOR, TOOLTIP_DEFAULT_BACKGROUND_COLOR
 
 -------------------------------------------------------------------------------
 -- Addon namespace
@@ -308,6 +309,22 @@ local function GetAnchor(frame)
 end
 
 -------------------------------------------------------------------------------
+-- Panel Backdrops
+-------------------------------------------------------------------------------
+local TooltipBackdrop = {
+	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true, tileSize = 16, edgeSize = 16,
+	insets = { left = 5, right = 5, top = 5, bottom = 5, }
+}
+
+local PlainBackdrop = {
+	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+	tile = true, tileSize = 16, edgeSize = 16,
+	insets = { left = 5, right = 5, top = 5, bottom = 5, }
+}
+
+-------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
 function Volumizer:PLAYER_ENTERING_WORLD()
@@ -315,25 +332,33 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-- Main panel setup
 	-----------------------------------------------------------------------
 	self:SetFrameStrata("FULLSCREEN_DIALOG")
-	self:SetBackdrop({
-				 bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-				 edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-				 tile = true, tileSize = 32, edgeSize = 32,
-				 insets = { left = 11, right = 12, top = 12, bottom = 11 }
-			 })
-	local def_col, def_bg_col = TOOLTIP_DEFAULT_COLOR, TOOLTIP_DEFAULT_BACKGROUND_COLOR
-	self:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
-	self:SetBackdropColor(def_bg_col.r, def_bg_col.g, def_bg_col.b)
+	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
 	self:SetHeight(260)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:Hide()
 
-	local titlebox = CreateFrame("Frame", nil, self)
-	local titlebg = self:CreateTexture(nil, "ARTWORK")
+	-----------------------------------------------------------------------
+	-- Panel border setup
+	-----------------------------------------------------------------------
+	local border = CreateFrame("Frame", nil, self)
+	self.border = border
+
+	border:SetFrameStrata("FULLSCREEN_DIALOG")
+	border:SetBackdrop({
+				   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+				   tile = true, tileSize = 32, edgeSize = 32,
+				   insets = { left = 11, right = 12, top = 12, bottom = 11 }
+			   })
+	border:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
+	border:SetAllPoints(self)
+	border:Hide()
+
+	local titlebox = CreateFrame("Frame", nil, border)
+	local titlebg = border:CreateTexture(nil, "ARTWORK")
 	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-	titlebg:SetPoint("CENTER", self, "TOP", 0, -17)
+	titlebg:SetPoint("CENTER", border, "TOP", 0, -17)
 	titlebg:SetWidth(230)
 	titlebg:SetHeight(56)
 
@@ -343,6 +368,9 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	text:SetPoint("TOP", titlebg, "TOP", 0, -11)
 	text:SetText("Volumizer")
 
+	-----------------------------------------------------------------------
+	-- Slider and Checkbox setup
+	-----------------------------------------------------------------------
 	local relative = self
 	local widget
 	for k, v in pairs(VOLUMES) do
@@ -379,9 +407,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	text:SetPoint("RIGHT", widget, "LEFT")
 	text:SetText("Presets")
-
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-	self.PLAYER_ENTERING_WORLD = nil
 
 	-----------------------------------------------------------------------
 	-- Static popup initialization
@@ -430,11 +455,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			local x, y = GetCursorPosition()
 			if not old_x or not old_y or not x or not y or not click_time then
 				self:Hide()
+				border:Hide()
 				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
 				return
 			end
 			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
 				self:Hide()
+				border:Hide()
 			end
 			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
 		end)
@@ -450,6 +477,15 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
 	end
 	DataObj:UpdateText()
+
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	self.PLAYER_ENTERING_WORLD = nil
+end
+
+function Volumizer:ChangeBackdrop(backdrop)
+	self:SetBackdrop(backdrop)
+	self:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
+	self:SetBackdropColor(def_bg_col.r, def_bg_col.g, def_bg_col.b)
 end
 
 local function UsePreset(self, preset)
@@ -532,13 +568,20 @@ function Volumizer.Menu(self, level)
 	end
 end
 
-function Volumizer:Toggle(anchor)
+function Volumizer:Toggle(anchor, tog_border)
 	if self:IsShown() then
 		self:Hide()
+		self.border:Hide()
 	else
 		self:ClearAllPoints()
 		self:SetPoint(GetAnchor(anchor))
 		self:Show()
+		if tog_border then
+			self:ChangeBackdrop(PlainBackdrop)
+			self.border:Show()
+		else
+			self:ChangeBackdrop(TooltipBackdrop)
+		end
 	end
 end
 
@@ -562,4 +605,4 @@ Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 SLASH_Volumizer1 = "/volumizer"
 SLASH_Volumizer2 = "/vol"
-SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil) end
+SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil, true) end
