@@ -295,19 +295,6 @@ do
 	end
 end
 
-local function GetAnchor(frame)
-	if not frame then return "CENTER", UIParent, 0, 0 end
-
-	local x,y = frame:GetCenter()
-
-	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
-
-	local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
-	local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
-
-	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
-end
-
 -------------------------------------------------------------------------------
 -- Panel Backdrops
 -------------------------------------------------------------------------------
@@ -568,34 +555,47 @@ function Volumizer.Menu(self, level)
 	end
 end
 
-function Volumizer:Toggle(anchor, tog_border)
-	if self:IsShown() then
-		self:Hide()
-		self.border:Hide()
-	else
-		self:ClearAllPoints()
-		self:SetPoint(GetAnchor(anchor))
-		self:Show()
-		if tog_border then
-			self:ChangeBackdrop(PlainBackdrop)
-			self.border:Show()
+do
+	local function GetAnchor(frame)
+		if not frame then return "CENTER", UIParent, 0, 0 end
+
+		local x,y = frame:GetCenter()
+
+		if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
+
+		local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
+		local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
+
+		return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
+	end
+
+	function Volumizer:Toggle(anchor, tog_border)
+		if self:IsShown() then
+			self:Hide()
+			self.border:Hide()
 		else
-			self:ChangeBackdrop(TooltipBackdrop)
+			self:ClearAllPoints()
+			self:SetPoint(GetAnchor(anchor))
+			self:Show()
+			if tog_border then
+				self:ChangeBackdrop(PlainBackdrop)
+				self.border:Show()
+			else
+				self:ChangeBackdrop(TooltipBackdrop)
+			end
 		end
 	end
+end	-- do
+
+function DataObj.OnEnter(display, motion)
+	Volumizer:Toggle(display, false)
 end
 
-function DataObj:OnClick(frame, button)	Volumizer:Toggle(self) end
-
-function DataObj:OnEnter()
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint("TOPLEFT", self, "BOTTOMLEFT")
-	GameTooltip:ClearLines()
-	GameTooltip:AddLine(CLICK_FOR_DETAILS)
-	GameTooltip:Show()
+function DataObj.OnLeave(display, motion)
+	if not MouseIsOver(Volumizer) then
+		Volumizer:Toggle(display, false)
+	end
 end
-
-function DataObj:OnLeave() GameTooltip:Hide() end
 
 function DataObj:UpdateText()
 	self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
