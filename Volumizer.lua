@@ -324,6 +324,8 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetHeight(260)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
+	self:SetMovable(true)
+	self:SetClampedToScreen(true)
 	self:Hide()
 
 	-----------------------------------------------------------------------
@@ -343,6 +345,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	border:Hide()
 
 	local titlebox = CreateFrame("Frame", nil, border)
+	titlebox:EnableMouse(true)
+	titlebox:SetMovable(true)
+	titlebox:RegisterForDrag("LeftButton")
+	titlebox:SetScript("OnDragStart", function() Volumizer:StartMoving() end)
+	titlebox:SetScript("OnDragStop", function() Volumizer:StopMovingOrSizing() end)
+
 	local titlebg = border:CreateTexture(nil, "ARTWORK")
 	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
 	titlebg:SetPoint("CENTER", border, "TOP", 0, -17)
@@ -595,6 +603,10 @@ function DataObj.OnLeave(display, motion)
 	if not MouseIsOver(Volumizer) then
 		Volumizer:Toggle(display, false)
 	end
+end
+
+function DataObj.OnClick(display, button)
+	SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
 end
 
 function DataObj:UpdateText()
