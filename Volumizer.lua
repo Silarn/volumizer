@@ -1,15 +1,17 @@
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local tonumber, tostring = tonumber, tostring
-local format = string.format
-local pairs, ipairs = pairs, ipairs
-local wipe = wipe
+local _G = getfenv(0)
 
-local CreateFrame = CreateFrame
-local GameTooltip = GameTooltip
-local UIParent = UIParent
-local def_col, def_bg_col = TOOLTIP_DEFAULT_COLOR, TOOLTIP_DEFAULT_BACKGROUND_COLOR
+local tonumber, tostring = _G.tonumber, _G.tostring
+local format = _G.string.format
+local pairs, ipairs = _G.pairs, _G.ipairs
+local wipe = _G.wipe
+
+local CreateFrame = _G.CreateFrame
+local GameTooltip = _G.GameTooltip
+local UIParent = _G.UIParent
+local def_col, def_bg_col = _G.TOOLTIP_DEFAULT_COLOR, _G.TOOLTIP_DEFAULT_BACKGROUND_COLOR
 
 -------------------------------------------------------------------------------
 -- Addon namespace
@@ -206,8 +208,8 @@ end
 
 local MakeToggle, MakeControl
 do
-	local hooksecurefunc = hooksecurefunc
-	local BlizzardOptionsPanel_GetCVarSafe = BlizzardOptionsPanel_GetCVarSafe
+	local hooksecurefunc = _G.hooksecurefunc
+	local BlizzardOptionsPanel_GetCVarSafe = _G.BlizzardOptionsPanel_GetCVarSafe
 
 	function MakeToggle(name, relative)
 		local ref = TOGGLES[name]
@@ -262,6 +264,7 @@ do
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
 		slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
 		slider:SetValueStep(ref.SoundOption.valueStep)
+		slider:EnableMouseWheel(true)
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
@@ -271,10 +274,25 @@ do
 				 function(slider, value)
 					 ref.Volume:SetValue(value)
 					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
-					 if (ref == VOLUMES["master"]) then
+					 if ref == VOLUMES["master"] then
 						 DataObj:UpdateText()
 					 end
 				 end)
+
+		slider:SetScript("OnMouseWheel", function(self, delta)
+							 local currentValue = self:GetValue()
+							 local minValue, maxValue = self:GetMinMaxValues()
+
+							 if delta > 0 and currentValue < maxValue then
+								 self:SetValue(math.min(maxValue, currentValue + 0.10))
+							 elseif delta < 0 then
+								 if currentValue == maxValue then
+									 self:SetValue(math.max(minValue, currentValue - 0.20))
+								 elseif currentValue > minValue then
+									 self:SetValue(math.max(minValue, currentValue - 0.10))
+								 end
+							 end
+						 end)
 
 		hooksecurefunc("SetCVar",
 			       function(cvar, value)

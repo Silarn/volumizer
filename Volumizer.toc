@@ -1,4 +1,4 @@
-## Interface: 30100
+## Interface: 30200
 ## Title: Volumizer
 ## Notes: Volume control panel.
 ## Author: Torhal
@@ -6,7 +6,7 @@
 ## SavedVariables: VolumizerPresets
 ## X-Date: @project-date-iso@
 ## X-Email: torhal-wow@googlegroups.com
-## X-Category: Miscellaneous
+## X-Category: Audio & Video
 
 #@no-lib-strip@
 embeds.xml
