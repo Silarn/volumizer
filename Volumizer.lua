@@ -17,16 +17,13 @@ local def_col, def_bg_col = _G.TOOLTIP_DEFAULT_COLOR, _G.TOOLTIP_DEFAULT_BACKGRO
 -- Addon namespace
 -------------------------------------------------------------------------------
 local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
+
 Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event] (self, event, ...) end end)
+Volumizer:RegisterEvent("ADDON_LOADED")
 
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
-local DataObj = LDB:NewDataObject("Volumizer", {
-	type	= "data source",
-	label	= "Volumizer",
-	text	= "0%",
-	icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER"
-})
+local DataObj
 
 local DropDown = CreateFrame("Frame", "Volumizer_DropDown")
 DropDown.displayMode = "MENU"
@@ -332,169 +329,6 @@ local PlainBackdrop = {
 -------------------------------------------------------------------------------
 -- Main AddOn functions
 -------------------------------------------------------------------------------
-function Volumizer:PLAYER_ENTERING_WORLD()
-	-----------------------------------------------------------------------
-	-- Main panel setup
-	-----------------------------------------------------------------------
-	self:SetFrameStrata("FULLSCREEN_DIALOG")
-	self:ChangeBackdrop(PlainBackdrop)
-	self:SetWidth(180)
-	self:SetHeight(260)
-	self:SetToplevel(true)
-	self:EnableMouse(true)
-	self:SetMovable(true)
-	self:SetClampedToScreen(true)
-	self:Hide()
-
-	-----------------------------------------------------------------------
-	-- Panel border setup
-	-----------------------------------------------------------------------
-	local border = CreateFrame("Frame", nil, self)
-	self.border = border
-
-	border:SetFrameStrata("FULLSCREEN_DIALOG")
-	border:SetBackdrop({
-				   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-				   tile = true, tileSize = 32, edgeSize = 32,
-				   insets = { left = 11, right = 12, top = 12, bottom = 11 }
-			   })
-	border:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
-	border:SetAllPoints(self)
-	border:Hide()
-
-	local titlebox = CreateFrame("Frame", nil, border)
-	titlebox:EnableMouse(true)
-	titlebox:SetMovable(true)
-	titlebox:RegisterForDrag("LeftButton")
-	titlebox:SetScript("OnDragStart", function() Volumizer:StartMoving() end)
-	titlebox:SetScript("OnDragStop", function() Volumizer:StopMovingOrSizing() end)
-
-	local titlebg = border:CreateTexture(nil, "ARTWORK")
-	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-	titlebg:SetPoint("CENTER", border, "TOP", 0, -17)
-	titlebg:SetWidth(230)
-	titlebg:SetHeight(56)
-
-	titlebox:SetAllPoints(titlebg)
-
-	local text = titlebox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	text:SetPoint("TOP", titlebg, "TOP", 0, -11)
-	text:SetText("Volumizer")
-
-	-----------------------------------------------------------------------
-	-- Slider and Checkbox setup
-	-----------------------------------------------------------------------
-	local relative = self
-	local widget
-	for k, v in pairs(VOLUMES) do
-		widget = MakeControl(k, relative)
-		relative = widget
-	end
-	relative = MakeContainer(relative, -10)	-- Blank space in panel.
-
-	for k, v in pairs(TOGGLES) do
-		widget = MakeToggle(k, relative)
-		relative = widget
-	end
-	relative = MakeContainer(relative, -20)	-- Blank space in panel.
-
-	widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
-	widget:SetWidth(20)
-	widget:SetHeight(20)
-	widget:SetPoint("RIGHT")
-	widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
-	widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
-	widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
-	widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
-	widget:SetScript("OnClick",
-		function(self, button, down)
-			if DropDown.initialize ~= Volumizer.Menu then
-				CloseDropDownMenus()
-				DropDown.initialize = Volumizer.Menu
-			end
-			DropDown.relativeTo = self
-			ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
-		end)
-	widget:SetScript("OnHide", DropDown.HideMenu)
-
-	local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("RIGHT", widget, "LEFT")
-	text:SetText("Presets")
-
-	-----------------------------------------------------------------------
-	-- Static popup initialization
-	-----------------------------------------------------------------------
-	local function OnRenamePreset(self)
-		local text = _G[self:GetParent():GetName().."EditBox"]:GetText()
-
-		if text == "" then text = nil end
-		_G[self:GetParent():GetName().."EditBox"]:SetText("")
-
-		VolumizerPresets[Volumizer.renaming].name = text
-		self:GetParent():Hide()
-	end
-
-	StaticPopupDialogs["Volumizer_RenamePreset"] = {
-		text = ERR_NAME_NO_NAME,
-		button1 = TEXT(YES),
-		button2 = TEXT(CANCEL),
-		OnAccept = OnRenamePreset,
-		EditBoxOnEnterPressed = OnRenamePreset,
-		EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
-		timeout = 0,
-		hideOnEscape = 1,
-		exclusive = 1,
-		whileDead = 1,
-		hasEditBox = 1
-	}
-
-	-----------------------------------------------------------------------
-	-- Frame interaction with keyboard/mouse
-	-----------------------------------------------------------------------
-	tinsert(UISpecialFrames, "VolumizerPanel")
-
-	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
-	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
-	local old_x, old_y, click_time
-	WorldFrame:SetScript("OnMouseDown",
-		function(frame, ...)
-			old_x, old_y = GetCursorPosition()
-			click_time = GetTime()
-			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
-		end)
-
-	WorldFrame:SetScript("OnMouseUp",
-		function(frame, ...)
-			local x, y = GetCursorPosition()
-			if not old_x or not old_y or not x or not y or not click_time then
-				self:Hide()
-				border:Hide()
-				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-				return
-			end
-			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
-				self:Hide()
-				border:Hide()
-			end
-			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
-		end)
-
-	-----------------------------------------------------------------------
-	-- LDB Icon initial display
-	-----------------------------------------------------------------------
-	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
-
-	if enabled == 1 then
-		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
-	else
-		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
-	end
-	DataObj:UpdateText()
-
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-	self.PLAYER_ENTERING_WORLD = nil
-end
-
 function Volumizer:ChangeBackdrop(backdrop)
 	self:SetBackdrop(backdrop)
 	self:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
@@ -613,26 +447,200 @@ do
 	end
 end	-- do
 
-function DataObj.OnEnter(display, motion)
-	Volumizer:Toggle(display, false)
+-------------------------------------------------------------------------------
+-- Event functions
+-------------------------------------------------------------------------------
+function Volumizer:ADDON_LOADED(event, addon)
+	if addon ~= "Volumizer" then return end
+
+	self:UnregisterEvent("ADDON_LOADED")
+	self.ADDON_LOADED = nil
+
+	if IsLoggedIn() then self:PLAYER_ENTERING_WORLD() else self:RegisterEvent("PLAYER_ENTERING_WORLD") end
 end
 
-function DataObj.OnLeave(display, motion)
-	if not MouseIsOver(Volumizer) then
-		Volumizer:Toggle(display, false)
+function Volumizer:PLAYER_ENTERING_WORLD()
+	-----------------------------------------------------------------------
+	-- Main panel setup
+	-----------------------------------------------------------------------
+	self:SetFrameStrata("FULLSCREEN_DIALOG")
+	self:ChangeBackdrop(PlainBackdrop)
+	self:SetWidth(180)
+	self:SetHeight(260)
+	self:SetToplevel(true)
+	self:EnableMouse(true)
+	self:SetMovable(true)
+	self:SetClampedToScreen(true)
+	self:Hide()
+
+	-----------------------------------------------------------------------
+	-- Panel border setup
+	-----------------------------------------------------------------------
+	local border = CreateFrame("Frame", nil, self)
+	self.border = border
+
+	border:SetFrameStrata("FULLSCREEN_DIALOG")
+	border:SetBackdrop({
+				   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+				   tile = true, tileSize = 32, edgeSize = 32,
+				   insets = { left = 11, right = 12, top = 12, bottom = 11 }
+			   })
+	border:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
+	border:SetAllPoints(self)
+	border:Hide()
+
+	local titlebox = CreateFrame("Frame", nil, border)
+	titlebox:EnableMouse(true)
+	titlebox:SetMovable(true)
+	titlebox:RegisterForDrag("LeftButton")
+	titlebox:SetScript("OnDragStart", function() Volumizer:StartMoving() end)
+	titlebox:SetScript("OnDragStop", function() Volumizer:StopMovingOrSizing() end)
+
+	local titlebg = border:CreateTexture(nil, "ARTWORK")
+	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+	titlebg:SetPoint("CENTER", border, "TOP", 0, -17)
+	titlebg:SetWidth(230)
+	titlebg:SetHeight(56)
+
+	titlebox:SetAllPoints(titlebg)
+
+	local text = titlebox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	text:SetPoint("TOP", titlebg, "TOP", 0, -11)
+	text:SetText("Volumizer")
+
+	-----------------------------------------------------------------------
+	-- Slider and Checkbox setup
+	-----------------------------------------------------------------------
+	local relative = self
+	local widget
+
+	for k, v in pairs(VOLUMES) do
+		widget = MakeControl(k, relative)
+		relative = widget
 	end
+	relative = MakeContainer(relative, -10)	-- Blank space in panel.
+
+	for k, v in pairs(TOGGLES) do
+		widget = MakeToggle(k, relative)
+		relative = widget
+	end
+	relative = MakeContainer(relative, -20)	-- Blank space in panel.
+
+	widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
+	widget:SetWidth(20)
+	widget:SetHeight(20)
+	widget:SetPoint("RIGHT")
+	widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
+	widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
+	widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
+	widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+	widget:SetScript("OnClick",
+		function(self, button, down)
+			if DropDown.initialize ~= Volumizer.Menu then
+				CloseDropDownMenus()
+				DropDown.initialize = Volumizer.Menu
+			end
+			DropDown.relativeTo = self
+			ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
+		end)
+	widget:SetScript("OnHide", DropDown.HideMenu)
+
+	local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	text:SetPoint("RIGHT", widget, "LEFT")
+	text:SetText("Presets")
+
+	-----------------------------------------------------------------------
+	-- Static popup initialization
+	-----------------------------------------------------------------------
+	local function OnRenamePreset(self)
+		local text = _G[self:GetParent():GetName().."EditBox"]:GetText()
+
+		if text == "" then text = nil end
+		_G[self:GetParent():GetName().."EditBox"]:SetText("")
+
+		VolumizerPresets[Volumizer.renaming].name = text
+		self:GetParent():Hide()
+	end
+
+	StaticPopupDialogs["Volumizer_RenamePreset"] = {
+		text = ERR_NAME_NO_NAME,
+		button1 = TEXT(YES),
+		button2 = TEXT(CANCEL),
+		OnAccept = OnRenamePreset,
+		EditBoxOnEnterPressed = OnRenamePreset,
+		EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+		timeout = 0,
+		hideOnEscape = 1,
+		exclusive = 1,
+		whileDead = 1,
+		hasEditBox = 1
+	}
+
+	-----------------------------------------------------------------------
+	-- Frame interaction with keyboard/mouse
+	-----------------------------------------------------------------------
+	tinsert(UISpecialFrames, "VolumizerPanel")
+
+	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
+	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
+	local old_x, old_y, click_time
+	WorldFrame:SetScript("OnMouseDown",
+		function(frame, ...)
+			old_x, old_y = GetCursorPosition()
+			click_time = GetTime()
+			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+		end)
+
+	WorldFrame:SetScript("OnMouseUp",
+		function(frame, ...)
+			local x, y = GetCursorPosition()
+			if not old_x or not old_y or not x or not y or not click_time then
+				self:Hide()
+				border:Hide()
+				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+				return
+			end
+			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
+				self:Hide()
+				border:Hide()
+			end
+			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+		end)
+
+	SLASH_Volumizer1 = "/volumizer"
+	SLASH_Volumizer2 = "/vol"
+	SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil, true) end
+
+	-----------------------------------------------------------------------
+	-- LDB Icon initial display
+	-----------------------------------------------------------------------
+	DataObj = LDB:NewDataObject("Volumizer", {
+		type	= "data source",
+		label	= "Volumizer",
+		text	= "0%",
+		icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER",
+		OnClick	= function(display, button)
+				  SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
+			  end,
+		OnEnter	= function(display, motion) Volumizer:Toggle(display, false) end,
+		OnLeave	= function(display, motion)
+				  if not MouseIsOver(Volumizer) then
+					  Volumizer:Toggle(display, false)
+				  end
+			  end,
+		UpdateText	= function(self)
+					  self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
+				  end,
+	})
+	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
+
+	if enabled == 1 then
+		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+	else
+		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+	end
+	DataObj:UpdateText()
+
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+	self.PLAYER_ENTERING_WORLD = nil
 end
-
-function DataObj.OnClick(display, button)
-	SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
-end
-
-function DataObj:UpdateText()
-	self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
-end
-
-Volumizer:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-SLASH_Volumizer1 = "/volumizer"
-SLASH_Volumizer2 = "/vol"
-SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil, true) end
