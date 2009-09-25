@@ -61,7 +61,8 @@ local DEFAULT_PRESET_VALUES = {
 	["emote"]	= 1,
 	["pet"]		= 1,
 	["loop"]	= 0,
-	["background"]	= 0
+	["background"]	= 0,
+	["listener"]	= 1,
 }
 
 local INITIAL_PRESETS = {
@@ -157,6 +158,12 @@ local TOGGLES = {
 		Enable		= AudioOptionsSoundPanelSoundInBG,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND,
 	},
+	["listener"] = {
+		SoundOption	= SoundPanelOptions.Sound_ListenerAtCharacter,
+		EnableCVar	= "Sound_ListenerAtCharacter",
+		Enable		= nil,
+		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND_AT_CHARACTER,
+	},
 }
 
 local HorizontalSliderBG = {
@@ -213,11 +220,20 @@ do
 		local container = MakeContainer(relative, -15)
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
-		check:SetChecked(ref.Enable:GetValue())
+
+		if ref.Enable then
+			check:SetChecked(ref.Enable:GetValue())
+		else
+			check:SetChecked(tonumber(GetCVar(ref.EnableCVar)))
+		end
 		check:SetHitRectInsets(-10, -150, 0, 0)
 		check:SetScript("OnClick",
 				function(checkButton)
-					ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+					if ref.Enable then
+						ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+					else
+						SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
+					end
 				end)
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
@@ -344,6 +360,7 @@ local function UsePreset(self, preset)
 		SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
 		SetCVar(VOLUMES[k].EnableCVar, ref.values[k].enable)
 	end
+
 	for k, v in pairs(TOGGLES) do
 		SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
 	end
@@ -429,7 +446,7 @@ do
 		return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 	end
 
-	function Volumizer:Toggle(anchor, tog_border)
+	function Volumizer:Toggle(anchor, use_border)
 		if self:IsShown() then
 			self:Hide()
 			self.border:Hide()
@@ -437,7 +454,8 @@ do
 			self:ClearAllPoints()
 			self:SetPoint(GetAnchor(anchor))
 			self:Show()
-			if tog_border then
+
+			if use_border then
 				self:ChangeBackdrop(PlainBackdrop)
 				self.border:Show()
 			else
@@ -466,7 +484,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("FULLSCREEN_DIALOG")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(260)
+	self:SetHeight(270)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
@@ -620,14 +638,16 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		text	= "0%",
 		icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER",
 		OnClick	= function(display, button)
-				  SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
-			  end,
-		OnEnter	= function(display, motion) Volumizer:Toggle(display, false) end,
-		OnLeave	= function(display, motion)
-				  if not MouseIsOver(Volumizer) then
+				  if button == "LeftButton" then
+					  SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
+				  elseif button == "RightButton" then
 					  Volumizer:Toggle(display, false)
 				  end
 			  end,
+		OnTooltipShow	= function(self)
+					  self:AddLine(KEY_BUTTON1.." - "..MUTE)
+					  self:AddLine(KEY_BUTTON2.." - "..CLICK_FOR_DETAILS)
+				  end,
 		UpdateText	= function(self)
 					  self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
 				  end,
