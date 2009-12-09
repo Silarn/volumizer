@@ -30,9 +30,7 @@ DropDown.displayMode = "MENU"
 DropDown.point = "TOPLEFT"
 DropDown.relativePoint = "TOPRIGHT"
 DropDown.info = {}
-DropDown.levelADjust = 0
-DropDown.HideMenu = function() if UIDROPDOWNMENU_OPEN_MENU == DropDown then CloseDropDownMenus() end
-		    end
+DropDown.levelAdjust = 0
 DropDown.UncheckHack = function(button) _G[button:GetName().."Check"]:Hide() end
 
 -------------------------------------------------------------------------------
@@ -379,6 +377,12 @@ local function SavePreset(self, preset)
 		ref.values[k] = GetCVar(TOGGLES[k].EnableCVar)
 	end
 	VolumizerPresets[preset] = ref
+end
+
+function DropDown:HideMenu()
+	if UIDROPDOWNMENU_OPEN_MENU == self then
+		CloseDropDownMenus()
+	end
 end
 
 local function RenamePreset_Popup(self, preset)
