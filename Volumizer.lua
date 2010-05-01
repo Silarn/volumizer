@@ -447,6 +447,9 @@ function Volumizer.Menu(self, level)
 		info.colorCode = "|cffffff00"
 		UIDropDownMenu_AddButton(info, level)
 	elseif level == 2 then
+			wipe(info)
+			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
+
 			info.text = SAVE
 			info.func = SavePreset
 			UIDropDownMenu_AddButton(info, level)
