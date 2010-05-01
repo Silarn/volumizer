@@ -3,8 +3,10 @@
 -------------------------------------------------------------------------------
 local _G = getfenv(0)
 
+local string = _G.string
+
 local tonumber, tostring = _G.tonumber, _G.tostring
-local format = _G.string.format
+
 local pairs, ipairs = _G.pairs, _G.ipairs
 local wipe = _G.wipe
 
@@ -18,7 +20,12 @@ local def_col, def_bg_col = _G.TOOLTIP_DEFAULT_COLOR, _G.TOOLTIP_DEFAULT_BACKGRO
 -------------------------------------------------------------------------------
 local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
 
-Volumizer:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event] (self, event, ...) end end)
+Volumizer:SetScript("OnEvent",
+		    function(self, event, ...)
+			    if self[event] then
+				    return self[event] (self, event, ...)
+			    end
+		    end)
 Volumizer:RegisterEvent("ADDON_LOADED")
 
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
@@ -28,10 +35,10 @@ local DataObj
 local DropDown = CreateFrame("Frame", "Volumizer_DropDown")
 DropDown.displayMode = "MENU"
 DropDown.point = "TOPLEFT"
-DropDown.relativePoint = "TOPRIGHT"
+DropDown.relativePoint = "RIGHT"
+DropDown.yOffset = 8
 DropDown.info = {}
 DropDown.levelAdjust = 0
-DropDown.UncheckHack = function(button) _G[button:GetName().."Check"]:Hide() end
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -181,7 +188,9 @@ VolumizerPresets = VolumizerPresets or INITIAL_PRESETS
 -------------------------------------------------------------------------------
 local function HideTooltip() GameTooltip:Hide() end
 local function ShowTooltip(self)
-	if not self.tooltip then return end
+	if not self.tooltip then
+		return
+	end
 	GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 	GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
 end
@@ -253,6 +262,7 @@ do
 	function MakeControl(name, relative)
 		local ref = VOLUMES[name]
 		local container = MakeContainer(relative)
+
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
 		check:SetChecked(ref.Enable:GetValue())
@@ -279,12 +289,13 @@ do
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-		slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+		slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
 
 		slider:SetScript("OnValueChanged",
 				 function(slider, value)
 					 ref.Volume:SetValue(value)
-					 slider.text:SetText(format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+					 slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+
 					 if ref == VOLUMES["master"] then
 						 DataObj:UpdateText()
 					 end
@@ -311,7 +322,8 @@ do
 					       slider:SetValue(value)
 				       elseif cvar == ref.EnableCVar then
 					       check:SetChecked(value)
-					       if (ref == VOLUMES["master"]) then
+
+					       if ref == VOLUMES["master"] then
 						       if tonumber(value) == 1 then
 							       DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
 						       else
@@ -352,7 +364,10 @@ end
 local function UsePreset(self, preset)
 	local ref = (preset < 1) and DEFAULT_PRESET or VolumizerPresets[preset]
 
-	if not ref then error("The preset '"..preset.."' does not exist.") return end
+	if not ref then
+		error("The preset '"..preset.."' does not exist.")
+		return
+	end
 
 	for k, v in pairs(VOLUMES) do
 		SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
@@ -362,17 +377,24 @@ local function UsePreset(self, preset)
 	for k, v in pairs(TOGGLES) do
 		SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
 	end
+
+	-- Remove the check-mark from the menu entry.
+	_G[self:GetName().."Check"]:Hide()
 end
 
 local function SavePreset(self, preset)
 	local ref = VolumizerPresets[preset]
 
-	if not ref then error("The preset '"..preset.."' does not exist.") return end
+	if not ref then
+		error("The preset '"..preset.."' does not exist.")
+		return
+	end
 
 	for k, v in pairs(VOLUMES) do
 		ref.values[k].volume = GetCVar(VOLUMES[k].VolumeCVar)
 		ref.values[k].enable = GetCVar(VOLUMES[k].EnableCVar)
 	end
+
 	for k, v in pairs(TOGGLES) do
 		ref.values[k] = GetCVar(TOGGLES[k].EnableCVar)
 	end
@@ -392,7 +414,10 @@ local function RenamePreset_Popup(self, preset)
 end
 
 function Volumizer.Menu(self, level)
-	if not level then return end
+	if not level then
+		return
+	end
+
 	local info = DropDown.info
 	wipe(info)
 
@@ -404,7 +429,10 @@ function Volumizer.Menu(self, level)
 				info.hasArrow = true
 				info.notCheckable = 1
 				info.keepShownOnClick = 1
-				info.func = DropDown.UncheckHack
+
+				info.arg1 = k
+				info.func = UsePreset
+
 				UIDropDownMenu_AddButton(info, level)
 			end
 		end
@@ -419,13 +447,6 @@ function Volumizer.Menu(self, level)
 		info.colorCode = "|cffffff00"
 		UIDropDownMenu_AddButton(info, level)
 	elseif level == 2 then
-			wipe(info)
-			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
-
-			info.text = USE
-			info.func = UsePreset
-			UIDropDownMenu_AddButton(info, level)
-
 			info.text = SAVE
 			info.func = SavePreset
 			UIDropDownMenu_AddButton(info, level)
@@ -438,11 +459,15 @@ end
 
 do
 	local function GetAnchor(frame)
-		if not frame then return "CENTER", UIParent, 0, 0 end
+		if not frame then
+			return "CENTER", UIParent, 0, 0
+		end
 
 		local x,y = frame:GetCenter()
 
-		if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
+		if not x or not y then
+			return "TOPLEFT", "BOTTOMLEFT"
+		end
 
 		local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
 		local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
@@ -473,19 +498,25 @@ end	-- do
 -- Event functions
 -------------------------------------------------------------------------------
 function Volumizer:ADDON_LOADED(event, addon)
-	if addon ~= "Volumizer" then return end
+	if addon ~= "Volumizer" then
+		return
+	end
 
 	self:UnregisterEvent("ADDON_LOADED")
 	self.ADDON_LOADED = nil
 
-	if IsLoggedIn() then self:PLAYER_ENTERING_WORLD() else self:RegisterEvent("PLAYER_ENTERING_WORLD") end
+	if IsLoggedIn() then
+		self:PLAYER_ENTERING_WORLD()
+	else
+		self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	end
 end
 
 function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	-- Main panel setup
 	-----------------------------------------------------------------------
-	self:SetFrameStrata("FULLSCREEN_DIALOG")
+	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
 	self:SetHeight(270)
@@ -501,7 +532,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	local border = CreateFrame("Frame", nil, self)
 	self.border = border
 
-	border:SetFrameStrata("FULLSCREEN_DIALOG")
+	border:SetFrameStrata("MEDIUM")
 	border:SetBackdrop({
 				   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
 				   tile = true, tileSize = 32, edgeSize = 32,
@@ -515,8 +546,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	titlebox:EnableMouse(true)
 	titlebox:SetMovable(true)
 	titlebox:RegisterForDrag("LeftButton")
-	titlebox:SetScript("OnDragStart", function() Volumizer:StartMoving() end)
-	titlebox:SetScript("OnDragStop", function() Volumizer:StopMovingOrSizing() end)
+	titlebox:SetScript("OnDragStart", function()
+						  Volumizer:StartMoving()
+					  end)
+	titlebox:SetScript("OnDragStop", function()
+						 Volumizer:StopMovingOrSizing()
+					 end)
 
 	local titlebg = border:CreateTexture(nil, "ARTWORK")
 	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
@@ -590,7 +625,9 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		button2 = TEXT(CANCEL),
 		OnAccept = OnRenamePreset,
 		EditBoxOnEnterPressed = OnRenamePreset,
-		EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+		EditBoxOnEscapePressed = function(self)
+						 self:GetParent():Hide()
+					 end,
 		timeout = 0,
 		hideOnEscape = 1,
 		exclusive = 1,
@@ -606,32 +643,46 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
 	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
 	local old_x, old_y, click_time
+
 	WorldFrame:SetScript("OnMouseDown",
 		function(frame, ...)
 			old_x, old_y = GetCursorPosition()
 			click_time = GetTime()
-			if WorldFrame_OnMouseDown then WorldFrame_OnMouseDown(frame, ...) end
+
+			if WorldFrame_OnMouseDown then
+				WorldFrame_OnMouseDown(frame, ...)
+			end
 		end)
 
 	WorldFrame:SetScript("OnMouseUp",
 		function(frame, ...)
 			local x, y = GetCursorPosition()
+
 			if not old_x or not old_y or not x or not y or not click_time then
 				self:Hide()
 				border:Hide()
-				if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+
+				if WorldFrame_OnMouseUp then
+					WorldFrame_OnMouseUp(frame, ...)
+				end
 				return
 			end
+
 			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
 				self:Hide()
 				border:Hide()
 			end
-			if WorldFrame_OnMouseUp then WorldFrame_OnMouseUp(frame, ...) end
+
+			if WorldFrame_OnMouseUp then
+				WorldFrame_OnMouseUp(frame, ...)
+			end
 		end)
 
 	SLASH_Volumizer1 = "/volumizer"
 	SLASH_Volumizer2 = "/vol"
-	SlashCmdList["Volumizer"] = function() Volumizer:Toggle(nil, true) end
+	SlashCmdList["Volumizer"] = function()
+					    Volumizer:Toggle(nil, true)
+				    end
 
 	-----------------------------------------------------------------------
 	-- LDB Icon initial display
@@ -653,7 +704,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 					  self:AddLine(KEY_BUTTON2.." - "..CLICK_FOR_DETAILS)
 				  end,
 		UpdateText	= function(self)
-					  self.text = format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
+					  self.text = string.format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
 				  end,
 	})
 	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
