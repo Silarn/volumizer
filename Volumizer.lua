@@ -613,24 +613,42 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-- Static popup initialization
 	-----------------------------------------------------------------------
 	local function OnRenamePreset(self)
-		local text = _G[self:GetParent():GetName().."EditBox"]:GetText()
+		local parent = self:GetParent()
+		local edit_box = parent.editBox or self.editBox
+		local text = edit_box:GetText()
 
-		if text == "" then text = nil end
-		_G[self:GetParent():GetName().."EditBox"]:SetText("")
+		if text == "" then
+			text = nil
+		end
+		edit_box:SetText("")
 
 		VolumizerPresets[Volumizer.renaming].name = text
-		self:GetParent():Hide()
+		edit_box:GetParent():Hide()
 	end
 
 	StaticPopupDialogs["Volumizer_RenamePreset"] = {
-		text = ERR_NAME_NO_NAME,
-		button1 = TEXT(YES),
-		button2 = TEXT(CANCEL),
+		text = _G.ERR_NAME_NO_NAME,
+		button1 = _G.ACCEPT,
+		button2 = _G.CANCEL,
+		OnShow = function(self)
+				 self.button1:Disable();
+				 self.button2:Enable();
+				 self.editBox:SetFocus();
+			 end,
 		OnAccept = OnRenamePreset,
 		EditBoxOnEnterPressed = OnRenamePreset,
 		EditBoxOnEscapePressed = function(self)
 						 self:GetParent():Hide()
 					 end,
+		EditBoxOnTextChanged = function (self)
+					       local parent = self:GetParent();
+
+					       if parent.editBox:GetText() ~= "" then
+						       parent.button1:Enable();
+					       else
+						       parent.button1:Disable();
+					       end
+				       end,
 		timeout = 0,
 		hideOnEscape = 1,
 		exclusive = 1,
