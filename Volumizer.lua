@@ -631,9 +631,9 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		button1 = _G.ACCEPT,
 		button2 = _G.CANCEL,
 		OnShow = function(self)
-				 self.button1:Disable();
-				 self.button2:Enable();
-				 self.editBox:SetFocus();
+				 self.button1:Disable()
+				 self.button2:Enable()
+				 self.editBox:SetFocus()
 			 end,
 		OnAccept = OnRenamePreset,
 		EditBoxOnEnterPressed = OnRenamePreset,
@@ -641,12 +641,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 						 self:GetParent():Hide()
 					 end,
 		EditBoxOnTextChanged = function (self)
-					       local parent = self:GetParent();
+					       local parent = self:GetParent()
 
 					       if parent.editBox:GetText() ~= "" then
-						       parent.button1:Enable();
+						       parent.button1:Enable()
 					       else
-						       parent.button1:Disable();
+						       parent.button1:Disable()
 					       end
 				       end,
 		timeout = 0,
