@@ -437,18 +437,24 @@ function Volumizer.Menu(self, level)
 			end
 		end
 		wipe(info)		-- Blank space in menu.
-		info.disabled = true
-		UIDropDownMenu_AddButton(info, level)
-		info.disabled = nil
 
+		info.disabled = true
+		info.notCheckable = 1
+
+		UIDropDownMenu_AddButton(info, level)
+
+		info.disabled = nil
 		info.text = DEFAULTS
 		info.func = UsePreset
 		info.arg1 = 0
 		info.colorCode = "|cffffff00"
+		info.notCheckable = 1
 		UIDropDownMenu_AddButton(info, level)
 	elseif level == 2 then
 			wipe(info)
+
 			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
+			info.notCheckable = 1
 
 			info.text = SAVE
 			info.func = SavePreset
