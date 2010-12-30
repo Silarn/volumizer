@@ -427,8 +427,19 @@ end
 local function AddPreset(self)
 	local preset = {
 		["name"]	= ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
-		["values"]	= DEFAULT_PRESET_VALUES,
+		["values"]	= {},
 	}
+	for key, value in pairs(DEFAULT_PRESET_VALUES) do
+		if _G.type(value) == "table" then
+			preset.values[key] = {}
+
+			for k, v in pairs(value) do
+				preset.values[key][k] = v
+			end
+		else
+			preset.values[key] = value
+		end
+	end
 	table.insert(VolumizerPresets, preset)
 
 	RenamePreset_Popup(self, #VolumizerPresets)
