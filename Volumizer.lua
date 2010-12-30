@@ -3,12 +3,13 @@
 -------------------------------------------------------------------------------
 local _G = getfenv(0)
 
+local math = _G.math
 local string = _G.string
+local table = _G.table
 
 local tonumber, tostring = _G.tonumber, _G.tostring
 
 local pairs, ipairs = _G.pairs, _G.ipairs
-local wipe = _G.wipe
 
 local CreateFrame = _G.CreateFrame
 local GameTooltip = _G.GameTooltip
@@ -231,7 +232,7 @@ do
 		if ref.Enable then
 			check:SetChecked(ref.Enable:GetValue())
 		else
-			check:SetChecked(tonumber(GetCVar(ref.EnableCVar)))
+			check:SetChecked(tonumber(_G.GetCVar(ref.EnableCVar)))
 		end
 		check:SetHitRectInsets(-10, -150, 0, 0)
 		check:SetScript("OnClick",
@@ -239,7 +240,7 @@ do
 					if ref.Enable then
 						ref.Enable:SetValue(check:GetChecked() and 1 or 0)
 					else
-						SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
+						_G.SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
 					end
 				end)
 		check.tooltip = ref.Tooltip
@@ -372,17 +373,17 @@ local function UsePreset(self, preset)
 	local ref = (preset < 1) and DEFAULT_PRESET or VolumizerPresets[preset]
 
 	if not ref then
-		error("The preset '"..preset.."' does not exist.")
+		_G.error("The preset '"..preset.."' does not exist.")
 		return
 	end
 
 	for k, v in pairs(VOLUMES) do
-		SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
-		SetCVar(VOLUMES[k].EnableCVar, ref.values[k].enable)
+		_G.SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
+		_G.SetCVar(VOLUMES[k].EnableCVar, ref.values[k].enable)
 	end
 
 	for k, v in pairs(TOGGLES) do
-		SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
+		_G.SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
 	end
 
 	-- Remove the check-mark from the menu entry.
@@ -393,17 +394,17 @@ local function SavePreset(self, preset)
 	local ref = VolumizerPresets[preset]
 
 	if not ref then
-		error("The preset '"..preset.."' does not exist.")
+		_G.error("The preset '"..preset.."' does not exist.")
 		return
 	end
 
 	for k, v in pairs(VOLUMES) do
-		ref.values[k].volume = GetCVar(VOLUMES[k].VolumeCVar)
-		ref.values[k].enable = GetCVar(VOLUMES[k].EnableCVar)
+		ref.values[k].volume = _G.GetCVar(VOLUMES[k].VolumeCVar)
+		ref.values[k].enable = _G.GetCVar(VOLUMES[k].EnableCVar)
 	end
 
 	for k, v in pairs(TOGGLES) do
-		ref.values[k] = GetCVar(TOGGLES[k].EnableCVar)
+		ref.values[k] = _G.GetCVar(TOGGLES[k].EnableCVar)
 	end
 	VolumizerPresets[preset] = ref
 end
@@ -424,9 +425,9 @@ function Volumizer.Menu(self, level)
 	if not level then
 		return
 	end
-
 	local info = DropDown.info
-	wipe(info)
+
+	table.wipe(info)
 
 	if level == 1 then
 		for k, v in ipairs(VolumizerPresets) do
@@ -443,12 +444,12 @@ function Volumizer.Menu(self, level)
 				UIDropDownMenu_AddButton(info, level)
 			end
 		end
-		wipe(info)		-- Blank space in menu.
+		table.wipe(info)		-- Blank space in menu.
 
 		info.disabled = true
 		info.notCheckable = 1
 
-		UIDropDownMenu_AddButton(info, level)
+		_G.UIDropDownMenu_AddButton(info, level)
 
 		info.disabled = nil
 		info.text = DEFAULTS
@@ -456,9 +457,9 @@ function Volumizer.Menu(self, level)
 		info.arg1 = 0
 		info.colorCode = "|cffffff00"
 		info.notCheckable = 1
-		UIDropDownMenu_AddButton(info, level)
+		_G.UIDropDownMenu_AddButton(info, level)
 	elseif level == 2 then
-			wipe(info)
+		table.wipe(info)
 
 			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
 			info.notCheckable = 1
@@ -617,7 +618,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	widget:SetScript("OnClick",
 		function(self, button, down)
 			if DropDown.initialize ~= Volumizer.Menu then
-				CloseDropDownMenus()
+				_G.CloseDropDownMenus()
 				DropDown.initialize = Volumizer.Menu
 			end
 			DropDown.relativeTo = self
@@ -679,43 +680,29 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	-- Frame interaction with keyboard/mouse
 	-----------------------------------------------------------------------
-	tinsert(UISpecialFrames, "VolumizerPanel")
+	table.insert(UISpecialFrames, "VolumizerPanel")
 
-	local WorldFrame_OnMouseDown = WorldFrame:GetScript("OnMouseDown")
-	local WorldFrame_OnMouseUp = WorldFrame:GetScript("OnMouseUp")
 	local old_x, old_y, click_time
 
-	WorldFrame:SetScript("OnMouseDown",
+	WorldFrame:HookScript("OnMouseDown",
 		function(frame, ...)
 			old_x, old_y = GetCursorPosition()
 			click_time = GetTime()
-
-			if WorldFrame_OnMouseDown then
-				WorldFrame_OnMouseDown(frame, ...)
-			end
 		end)
 
-	WorldFrame:SetScript("OnMouseUp",
+	WorldFrame:HookScript("OnMouseUp",
 		function(frame, ...)
 			local x, y = GetCursorPosition()
 
 			if not old_x or not old_y or not x or not y or not click_time then
 				self:Hide()
 				border:Hide()
-
-				if WorldFrame_OnMouseUp then
-					WorldFrame_OnMouseUp(frame, ...)
-				end
 				return
 			end
 
 			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
 				self:Hide()
 				border:Hide()
-			end
-
-			if WorldFrame_OnMouseUp then
-				WorldFrame_OnMouseUp(frame, ...)
 			end
 		end)
 
@@ -735,7 +722,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER",
 		OnClick	= function(display, button)
 				  if button == "LeftButton" then
-					  SetCVar("Sound_EnableAllSound", (tonumber(GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
+					  _G.SetCVar("Sound_EnableAllSound", (tonumber(_G.GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
 				  elseif button == "RightButton" then
 					  Volumizer:Toggle(display, false)
 				  end
