@@ -44,8 +44,6 @@ DropDown.levelAdjust = 0
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
-local NUM_PRESETS = 5
-
 local DEFAULT_PRESET_VALUES = {
 	["ambience"]	= {
 		["volume"] = 0.6,
@@ -409,16 +407,37 @@ local function SavePreset(self, preset)
 	VolumizerPresets[preset] = ref
 end
 
-function DropDown:HideMenu()
-	if UIDROPDOWNMENU_OPEN_MENU == self then
-		CloseDropDownMenus()
+local function DeletePreset(self, preset)
+	local ref = VolumizerPresets[preset]
+
+	if not ref then
+		_G.error("The preset '"..preset.."' does not exist.")
+		return
 	end
+	table.remove(VolumizerPresets, preset)
+	_G.CloseDropDownMenus(1)
 end
 
 local function RenamePreset_Popup(self, preset)
 	Volumizer.renaming = preset
 	StaticPopup_Show("Volumizer_RenamePreset")
-	CloseDropDownMenus(1)
+	_G.CloseDropDownMenus(1)
+end
+
+local function AddPreset(self)
+	local preset = {
+		["name"]	= ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
+		["values"]	= DEFAULT_PRESET_VALUES,
+	}
+	table.insert(VolumizerPresets, preset)
+
+	RenamePreset_Popup(self, #VolumizerPresets)
+end
+
+function DropDown:HideMenu()
+	if UIDROPDOWNMENU_OPEN_MENU == self then
+		_G.CloseDropDownMenus()
+	end
 end
 
 function Volumizer.Menu(self, level)
@@ -430,19 +449,17 @@ function Volumizer.Menu(self, level)
 	table.wipe(info)
 
 	if level == 1 then
-		for k, v in ipairs(VolumizerPresets) do
-			if k > NUM_PRESETS then VolumizerPresets[k] = nil else
-				info.text = v.name
-				info.value = k
-				info.hasArrow = true
-				info.notCheckable = 1
-				info.keepShownOnClick = 1
+		for index, data in ipairs(VolumizerPresets) do
+			info.text = data.name
+			info.value = index
+			info.hasArrow = true
+			info.notCheckable = 1
+			info.keepShownOnClick = 1
 
-				info.arg1 = k
-				info.func = UsePreset
+			info.arg1 = index
+			info.func = UsePreset
 
-				UIDropDownMenu_AddButton(info, level)
-			end
+			_G.UIDropDownMenu_AddButton(info, level)
 		end
 		table.wipe(info)		-- Blank space in menu.
 
@@ -452,7 +469,14 @@ function Volumizer.Menu(self, level)
 		_G.UIDropDownMenu_AddButton(info, level)
 
 		info.disabled = nil
-		info.text = DEFAULTS
+		info.text = _G.ADD
+		info.func = AddPreset
+		info.arg1 = 0
+		info.colorCode = "|cffffff00"
+		info.notCheckable = 1
+		_G.UIDropDownMenu_AddButton(info, level)
+
+		info.text = _G.DEFAULTS
 		info.func = UsePreset
 		info.arg1 = 0
 		info.colorCode = "|cffffff00"
@@ -461,16 +485,20 @@ function Volumizer.Menu(self, level)
 	elseif level == 2 then
 		table.wipe(info)
 
-			info.arg1 = UIDROPDOWNMENU_MENU_VALUE
-			info.notCheckable = 1
+		info.arg1 = _G.UIDROPDOWNMENU_MENU_VALUE
+		info.notCheckable = 1
 
-			info.text = SAVE
-			info.func = SavePreset
-			UIDropDownMenu_AddButton(info, level)
+		info.text = _G.SAVE
+		info.func = SavePreset
+		_G.UIDropDownMenu_AddButton(info, level)
 
-			info.text = NAME
-			info.func = RenamePreset_Popup
-			UIDropDownMenu_AddButton(info, level)
+		info.text = _G.NAME
+		info.func = RenamePreset_Popup
+		_G.UIDropDownMenu_AddButton(info, level)
+
+		info.text = _G.DELETE
+		info.func = DeletePreset
+		_G.UIDropDownMenu_AddButton(info, level)
 	end
 end
 
