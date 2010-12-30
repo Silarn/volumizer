@@ -259,6 +259,10 @@ do
 		return container
 	end
 
+	local function SetSliderLabel(slider, ref, value)
+		slider.text:SetFormattedText("%s %d%%", _G[ref.SoundOption.text], value * 100)
+	end
+
 	function MakeControl(name, relative)
 		local ref = VOLUMES[name]
 		local container = MakeContainer(relative)
@@ -284,37 +288,40 @@ do
 		slider:SetBackdrop(HorizontalSliderBG)
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
 		slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
-		slider:SetValueStep(ref.SoundOption.valueStep)
+		slider:SetValueStep(0.05)
 		slider:EnableMouseWheel(true)
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
-		slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+
+		SetSliderLabel(slider, ref, ref.Volume:GetValue())
 
 		slider:SetScript("OnValueChanged",
-				 function(slider, value)
+				 function(self, value)
+					 value = tonumber(("%.2f"):format(value))
 					 ref.Volume:SetValue(value)
-					 slider.text:SetText(string.format("%s %d%%", _G[ref.SoundOption.text], tostring(ref.Volume:GetValue() * 100)))
+
+					 SetSliderLabel(self, ref, value)
 
 					 if ref == VOLUMES["master"] then
-						 DataObj:UpdateText()
+						 DataObj:UpdateText(value)
 					 end
 				 end)
 
-		slider:SetScript("OnMouseWheel", function(self, delta)
-							 local currentValue = self:GetValue()
-							 local minValue, maxValue = self:GetMinMaxValues()
+		slider:SetScript("OnMouseWheel",
+				 function(self, delta)
+					 local currentValue = tonumber(("%.2f"):format(self:GetValue()))
+					 local minValue, maxValue = self:GetMinMaxValues()
+					 local step = self:GetValueStep()
 
-							 if delta > 0 and currentValue < maxValue then
-								 self:SetValue(math.min(maxValue, currentValue + 0.10))
-							 elseif delta < 0 then
-								 if currentValue == maxValue then
-									 self:SetValue(math.max(minValue, currentValue - 0.20))
-								 elseif currentValue > minValue then
-									 self:SetValue(math.max(minValue, currentValue - 0.10))
-								 end
-							 end
-						 end)
+					 if delta > 0 then
+						 local new_value = tonumber(("%.2f"):format(math.min(maxValue, currentValue + step)))
+						 self:SetValue(new_value)
+					 elseif delta < 0 then
+						 local new_value = tonumber(("%.2f"):format(math.max(minValue, currentValue - step)))
+						 self:SetValue(new_value)
+					 end
+				 end)
 
 		hooksecurefunc("SetCVar",
 			       function(cvar, value)
@@ -592,6 +599,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	end
 	relative = MakeContainer(relative, -20)	-- Blank space in panel.
 
+	-----------------------------------------------------------------------
+	-- Hardware controls
+	-----------------------------------------------------------------------
+
+	-----------------------------------------------------------------------
+	-- Presets
+	-----------------------------------------------------------------------
 	widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
 	widget:SetWidth(20)
 	widget:SetHeight(20)
@@ -730,8 +744,8 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 					  self:AddLine(KEY_BUTTON1.." - "..MUTE)
 					  self:AddLine(KEY_BUTTON2.." - "..CLICK_FOR_DETAILS)
 				  end,
-		UpdateText	= function(self)
-					  self.text = string.format("%d%%", tostring(VOLUMES.master.Volume:GetValue() * 100))
+		UpdateText	= function(self, value)
+					  self.text = string.format("%d%%", value * 100)
 				  end,
 	})
 	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
@@ -741,7 +755,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	else
 		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
 	end
-	DataObj:UpdateText()
+	DataObj:UpdateText(VOLUMES.master.Volume:GetValue())
 
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	self.PLAYER_ENTERING_WORLD = nil
