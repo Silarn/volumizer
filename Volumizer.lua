@@ -185,7 +185,10 @@ VolumizerPresets = VolumizerPresets or INITIAL_PRESETS
 -------------------------------------------------------------------------------
 -- Local functions
 -------------------------------------------------------------------------------
-local function HideTooltip() GameTooltip:Hide() end
+local function HideTooltip()
+	GameTooltip:Hide()
+end
+
 local function ShowTooltip(self)
 	if not self.tooltip then
 		return
@@ -769,6 +772,22 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		OnTooltipShow	= function(self)
 					  self:AddLine(KEY_BUTTON1.." - "..MUTE)
 					  self:AddLine(KEY_BUTTON2.." - "..CLICK_FOR_DETAILS)
+				  end,
+		OnMouseWheel	= function(self, delta)
+					  local ref = VOLUMES["master"]
+					  local current = BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
+					  local min = ref.SoundOption.minValue
+					  local max = ref.SoundOption.maxValue
+					  local step = 0.05
+
+					  if delta > 0 then
+						  local new_value = tonumber(("%.2f"):format(math.min(max, current + step)))
+						  _G.SetCVar(ref.VolumeCVar, new_value)
+					  elseif delta < 0 then
+						  local new_value = tonumber(("%.2f"):format(math.max(min, current - step)))
+						  _G.SetCVar(ref.VolumeCVar, new_value)
+					  end
+
 				  end,
 		UpdateText	= function(self, value)
 					  self.text = string.format("%d%%", value * 100)
