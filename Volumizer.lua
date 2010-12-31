@@ -33,14 +33,6 @@ local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
 local DataObj
 
-local DropDown = CreateFrame("Frame", "Volumizer_DropDown")
-DropDown.displayMode = "MENU"
-DropDown.point = "TOPLEFT"
-DropDown.relativePoint = "RIGHT"
-DropDown.yOffset = 8
-DropDown.info = {}
-DropDown.levelAdjust = 0
-
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
@@ -221,9 +213,6 @@ end
 
 local MakeToggle, MakeControl
 do
-	local hooksecurefunc = _G.hooksecurefunc
-	local BlizzardOptionsPanel_GetCVarSafe = _G.BlizzardOptionsPanel_GetCVarSafe
-
 	function MakeToggle(name, relative)
 		local ref = TOGGLES[name]
 		local container = MakeContainer(relative, -15)
@@ -252,12 +241,12 @@ do
 		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
 		text:SetText(_G[ref.SoundOption.text])
 
-		hooksecurefunc("SetCVar",
-			       function(cvar, value)
-				       if cvar == ref.EnableCVar then
-					       check:SetChecked(value)
-				       end
-			       end)
+		_G.hooksecurefunc("SetCVar",
+				  function(cvar, value)
+					  if cvar == ref.EnableCVar then
+						  check:SetChecked(value)
+					  end
+				  end)
 		return container
 	end
 
@@ -289,7 +278,7 @@ do
 		slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 		slider:SetBackdrop(HorizontalSliderBG)
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
-		slider:SetValue(BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
+		slider:SetValue(_G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
 		slider:SetValueStep(0.05)
 		slider:EnableMouseWheel(true)
 
@@ -325,22 +314,22 @@ do
 					 end
 				 end)
 
-		hooksecurefunc("SetCVar",
-			       function(cvar, value)
-				       if cvar == ref.VolumeCVar then
-					       slider:SetValue(value)
-				       elseif cvar == ref.EnableCVar then
-					       check:SetChecked(value)
+		_G.hooksecurefunc("SetCVar",
+				  function(cvar, value)
+					  if cvar == ref.VolumeCVar then
+						  slider:SetValue(value)
+					  elseif cvar == ref.EnableCVar then
+						  check:SetChecked(value)
 
-					       if ref == VOLUMES["master"] then
-						       if tonumber(value) == 1 then
-							       DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
-						       else
-							       DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
-						       end
-					       end
-				       end
-			       end)
+						  if ref == VOLUMES["master"] then
+							  if tonumber(value) == 1 then
+								  DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+							  else
+								  DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+							  end
+						  end
+					  end
+				  end)
 		return container
 	end
 end
@@ -423,7 +412,7 @@ end
 
 local function RenamePreset_Popup(self, preset)
 	Volumizer.renaming = preset
-	StaticPopup_Show("Volumizer_RenamePreset")
+	_G.StaticPopup_Show("Volumizer_RenamePreset")
 	_G.CloseDropDownMenus(1)
 end
 
@@ -446,74 +435,6 @@ local function AddPreset(self)
 	table.insert(VolumizerPresets, preset)
 
 	RenamePreset_Popup(self, #VolumizerPresets)
-end
-
-function DropDown:HideMenu()
-	if UIDROPDOWNMENU_OPEN_MENU == self then
-		_G.CloseDropDownMenus()
-	end
-end
-
-function Volumizer.Menu(self, level)
-	if not level then
-		return
-	end
-	local info = DropDown.info
-
-	table.wipe(info)
-
-	if level == 1 then
-		for index, data in ipairs(VolumizerPresets) do
-			info.text = data.name
-			info.value = index
-			info.hasArrow = true
-			info.notCheckable = 1
-			info.keepShownOnClick = 1
-
-			info.arg1 = index
-			info.func = UsePreset
-
-			_G.UIDropDownMenu_AddButton(info, level)
-		end
-		table.wipe(info)		-- Blank space in menu.
-
-		info.disabled = true
-		info.notCheckable = 1
-
-		_G.UIDropDownMenu_AddButton(info, level)
-
-		info.disabled = nil
-		info.text = _G.ADD
-		info.func = AddPreset
-		info.arg1 = 0
-		info.colorCode = "|cffffff00"
-		info.notCheckable = 1
-		_G.UIDropDownMenu_AddButton(info, level)
-
-		info.text = _G.DEFAULTS
-		info.func = UsePreset
-		info.arg1 = 0
-		info.colorCode = "|cffffff00"
-		info.notCheckable = 1
-		_G.UIDropDownMenu_AddButton(info, level)
-	elseif level == 2 then
-		table.wipe(info)
-
-		info.arg1 = _G.UIDROPDOWNMENU_MENU_VALUE
-		info.notCheckable = 1
-
-		info.text = _G.SAVE
-		info.func = SavePreset
-		_G.UIDropDownMenu_AddButton(info, level)
-
-		info.text = _G.NAME
-		info.func = RenamePreset_Popup
-		_G.UIDropDownMenu_AddButton(info, level)
-
-		info.text = _G.DELETE
-		info.func = DeletePreset
-		_G.UIDropDownMenu_AddButton(info, level)
-	end
 end
 
 do
@@ -564,7 +485,7 @@ function Volumizer:ADDON_LOADED(event, addon)
 	self:UnregisterEvent("ADDON_LOADED")
 	self.ADDON_LOADED = nil
 
-	if IsLoggedIn() then
+	if _G.IsLoggedIn() then
 		self:PLAYER_ENTERING_WORLD()
 	else
 		self:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -578,7 +499,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(270)
+	self:SetHeight(300)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
@@ -628,131 +549,221 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-- Slider and Checkbox setup
 	-----------------------------------------------------------------------
 	local relative = self
-	local widget
 
-	for k, v in pairs(VOLUMES) do
-		widget = MakeControl(k, relative)
-		relative = widget
-	end
-	relative = MakeContainer(relative, -10)	-- Blank space in panel.
+	do
+		local widget
 
-	for k, v in pairs(TOGGLES) do
-		widget = MakeToggle(k, relative)
-		relative = widget
-	end
-	relative = MakeContainer(relative, -20)	-- Blank space in panel.
+		for k, v in pairs(VOLUMES) do
+			widget = MakeControl(k, relative)
+			relative = widget
+		end
+		relative = MakeContainer(relative, -10)	-- Blank space in panel.
+
+		for k, v in pairs(TOGGLES) do
+			widget = MakeToggle(k, relative)
+			relative = widget
+		end
+	end	-- do-block
+--	relative = MakeContainer(relative, -20)	-- Blank space in panel.
 
 	-----------------------------------------------------------------------
 	-- Hardware controls
 	-----------------------------------------------------------------------
+	do
+		local output = CreateFrame("Frame", "Volumizer_OutputDropDown", self, "UIDropDownMenuTemplate")
+
+		output:SetPoint("TOPLEFT", relative, "BOTTOMLEFT", -5, 10)
+
+--		relative = MakeContainer(output, -20)	-- Blank space in panel.
+	end	-- do-block
 
 	-----------------------------------------------------------------------
 	-- Presets
 	-----------------------------------------------------------------------
-	widget = CreateFrame("Button", "Volumizer_PresetButton", relative)
-	widget:SetWidth(20)
-	widget:SetHeight(20)
-	widget:SetPoint("RIGHT")
-	widget:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
-	widget:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
-	widget:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
-	widget:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
-	widget:SetScript("OnClick",
-		function(self, button, down)
-			if DropDown.initialize ~= Volumizer.Menu then
-				_G.CloseDropDownMenus()
-				DropDown.initialize = Volumizer.Menu
-			end
-			DropDown.relativeTo = self
-			ToggleDropDownMenu(1, nil, DropDown, self:GetName(), 0, 0)
-		end)
-	widget:SetScript("OnHide", DropDown.HideMenu)
+	do
+		local preset_menu = CreateFrame("Frame", nil, self)
 
-	local text = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("RIGHT", widget, "LEFT")
-	text:SetText("Presets")
+		preset_menu.displayMode = "MENU"
+		preset_menu.point = "TOPLEFT"
+		preset_menu.relativePoint = "RIGHT"
+		preset_menu.yOffset = 8
+		preset_menu.levelAdjust = 0
+		preset_menu.info = {}
+
+		function preset_menu.initialize(self, level)
+			if not level then
+				return
+			end
+			local info = preset_menu.info
+
+			table.wipe(info)
+
+			if level == 1 then
+				for index, data in ipairs(VolumizerPresets) do
+					info.text = data.name
+					info.value = index
+					info.hasArrow = true
+					info.notCheckable = 1
+					info.keepShownOnClick = 1
+
+					info.arg1 = index
+					info.func = UsePreset
+
+					_G.UIDropDownMenu_AddButton(info, level)
+				end
+				table.wipe(info)		-- Blank space in menu.
+
+				info.disabled = true
+				info.notCheckable = 1
+
+				_G.UIDropDownMenu_AddButton(info, level)
+
+				info.disabled = nil
+				info.text = _G.ADD
+				info.func = AddPreset
+				info.arg1 = 0
+				info.colorCode = "|cffffff00"
+				info.notCheckable = 1
+				_G.UIDropDownMenu_AddButton(info, level)
+
+				info.text = _G.DEFAULTS
+				info.func = UsePreset
+				info.arg1 = 0
+				info.colorCode = "|cffffff00"
+				info.notCheckable = 1
+				_G.UIDropDownMenu_AddButton(info, level)
+			elseif level == 2 then
+				table.wipe(info)
+
+				info.arg1 = _G.UIDROPDOWNMENU_MENU_VALUE
+				info.notCheckable = 1
+
+				info.text = _G.SAVE
+				info.func = SavePreset
+				_G.UIDropDownMenu_AddButton(info, level)
+
+				info.text = _G.NAME
+				info.func = RenamePreset_Popup
+				_G.UIDropDownMenu_AddButton(info, level)
+
+				info.text = _G.DELETE
+				info.func = DeletePreset
+				_G.UIDropDownMenu_AddButton(info, level)
+			end
+		end
+
+		local preset_button = CreateFrame("Button", "Volumizer_PresetButton", self)
+		preset_button:SetWidth(20)
+		preset_button:SetHeight(20)
+		preset_button:SetPoint("RIGHT", self, "BOTTOMRIGHT", -8, 17)
+		preset_button:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
+		preset_button:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
+		preset_button:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
+		preset_button:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+
+		preset_button:SetScript("OnClick",
+					function(self, button, down)
+						preset_menu.relativeTo = self
+						_G.ToggleDropDownMenu(1, nil, preset_menu, self:GetName(), 0, 0)
+					end)
+		preset_button:SetScript("OnHide",
+					function()
+						if _G.UIDROPDOWNMENU_OPEN_MENU == preset_menu then
+							_G.CloseDropDownMenus()
+						end
+					end)
+
+		local text = preset_button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("RIGHT", preset_button, "LEFT")
+		text:SetText("Presets")
+	end	-- do-block
 
 	-----------------------------------------------------------------------
 	-- Static popup initialization
 	-----------------------------------------------------------------------
-	local function OnRenamePreset(self)
-		local parent = self:GetParent()
-		local edit_box = parent.editBox or self.editBox
-		local text = edit_box:GetText()
+	do
+		local function OnRenamePreset(self)
+			local parent = self:GetParent()
+			local edit_box = parent.editBox or self.editBox
+			local text = edit_box:GetText()
 
-		if text == "" then
-			text = nil
+			if text == "" then
+				text = nil
+			end
+			edit_box:SetText("")
+
+			VolumizerPresets[Volumizer.renaming].name = text
+			edit_box:GetParent():Hide()
 		end
-		edit_box:SetText("")
 
-		VolumizerPresets[Volumizer.renaming].name = text
-		edit_box:GetParent():Hide()
-	end
+		StaticPopupDialogs["Volumizer_RenamePreset"] = {
+			text = _G.ERR_NAME_NO_NAME,
+			button1 = _G.ACCEPT,
+			button2 = _G.CANCEL,
+			OnShow = function(self)
+					 self.button1:Disable()
+					 self.button2:Enable()
+					 self.editBox:SetFocus()
+				 end,
+			OnAccept = OnRenamePreset,
+			EditBoxOnEnterPressed = OnRenamePreset,
+			EditBoxOnEscapePressed = function(self)
+							 self:GetParent():Hide()
+						 end,
+			EditBoxOnTextChanged = function (self)
+						       local parent = self:GetParent()
 
-	StaticPopupDialogs["Volumizer_RenamePreset"] = {
-		text = _G.ERR_NAME_NO_NAME,
-		button1 = _G.ACCEPT,
-		button2 = _G.CANCEL,
-		OnShow = function(self)
-				 self.button1:Disable()
-				 self.button2:Enable()
-				 self.editBox:SetFocus()
-			 end,
-		OnAccept = OnRenamePreset,
-		EditBoxOnEnterPressed = OnRenamePreset,
-		EditBoxOnEscapePressed = function(self)
-						 self:GetParent():Hide()
-					 end,
-		EditBoxOnTextChanged = function (self)
-					       local parent = self:GetParent()
-
-					       if parent.editBox:GetText() ~= "" then
-						       parent.button1:Enable()
-					       else
-						       parent.button1:Disable()
-					       end
-				       end,
-		timeout = 0,
-		hideOnEscape = 1,
-		exclusive = 1,
-		whileDead = 1,
-		hasEditBox = 1
-	}
+						       if parent.editBox:GetText() ~= "" then
+							       parent.button1:Enable()
+						       else
+							       parent.button1:Disable()
+						       end
+					       end,
+			timeout = 0,
+			hideOnEscape = 1,
+			exclusive = 1,
+			whileDead = 1,
+			hasEditBox = 1
+		}
+	end	-- do-block
 
 	-----------------------------------------------------------------------
 	-- Frame interaction with keyboard/mouse
 	-----------------------------------------------------------------------
-	table.insert(UISpecialFrames, "VolumizerPanel")
+	do
+		local old_x, old_y, click_time
 
-	local old_x, old_y, click_time
+		WorldFrame:HookScript("OnMouseDown",
+				      function(frame, ...)
+					      old_x, old_y = _G.GetCursorPosition()
+					      click_time = _G.GetTime()
+				      end)
 
-	WorldFrame:HookScript("OnMouseDown",
-		function(frame, ...)
-			old_x, old_y = GetCursorPosition()
-			click_time = GetTime()
-		end)
+		WorldFrame:HookScript("OnMouseUp",
+				      function(frame, ...)
+					      local x, y = _G.GetCursorPosition()
 
-	WorldFrame:HookScript("OnMouseUp",
-		function(frame, ...)
-			local x, y = GetCursorPosition()
+					      if not old_x or not old_y or not x or not y or not click_time then
+						      self:Hide()
+						      border:Hide()
+						      return
+					      end
 
-			if not old_x or not old_y or not x or not y or not click_time then
-				self:Hide()
-				border:Hide()
-				return
-			end
+					      if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and _G.GetTime() - click_time < 1 then
+						      self:Hide()
+						      border:Hide()
+					      end
+				      end)
 
-			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and GetTime() - click_time < 1 then
-				self:Hide()
-				border:Hide()
-			end
-		end)
+		table.insert(UISpecialFrames, "VolumizerPanel")
 
-	SLASH_Volumizer1 = "/volumizer"
-	SLASH_Volumizer2 = "/vol"
-	SlashCmdList["Volumizer"] = function()
-					    Volumizer:Toggle(nil, true)
-				    end
+		SLASH_Volumizer1 = "/volumizer"
+		SLASH_Volumizer2 = "/vol"
+		SlashCmdList["Volumizer"] = function()
+						    Volumizer:Toggle(nil, true)
+					    end
+
+	end	-- do-block
 
 	-----------------------------------------------------------------------
 	-- LDB Icon initial display
@@ -770,12 +781,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 				  end
 			  end,
 		OnTooltipShow	= function(self)
-					  self:AddLine(KEY_BUTTON1.." - "..MUTE)
-					  self:AddLine(KEY_BUTTON2.." - "..CLICK_FOR_DETAILS)
+					  self:AddLine(_G.KEY_BUTTON1.." - ".._G.MUTE)
+					  self:AddLine(_G.KEY_BUTTON2.." - ".._G.CLICK_FOR_DETAILS)
 				  end,
 		OnMouseWheel	= function(self, delta)
 					  local ref = VOLUMES["master"]
-					  local current = BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
+					  local current = _G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
 					  local min = ref.SoundOption.minValue
 					  local max = ref.SoundOption.maxValue
 					  local step = 0.05
