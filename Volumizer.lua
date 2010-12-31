@@ -499,7 +499,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(300)
+	self:SetHeight(305)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
@@ -564,17 +564,85 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			relative = widget
 		end
 	end	-- do-block
---	relative = MakeContainer(relative, -20)	-- Blank space in panel.
 
 	-----------------------------------------------------------------------
-	-- Hardware controls
+	-- Hardware output controls
 	-----------------------------------------------------------------------
 	do
+		local cvar = "Sound_OutputDriverIndex"
+		local driver_index = _G.BlizzardOptionsPanel_GetCVarSafe(cvar)
+		local device_name = _G.Sound_GameSystem_GetOutputDriverNameByIndex(driver_index)
+
 		local output = CreateFrame("Frame", "Volumizer_OutputDropDown", self, "UIDropDownMenuTemplate")
+		output:SetPoint("TOPLEFT", relative, "BOTTOMLEFT", -5, 0)
 
-		output:SetPoint("TOPLEFT", relative, "BOTTOMLEFT", -5, 10)
+		local function output_OnClick(info)
+			local value = info.value
+			local dropdown = output
 
---		relative = MakeContainer(output, -20)	-- Blank space in panel.
+			_G.UIDropDownMenu_SetSelectedValue(dropdown, value)
+
+			local prev_value = dropdown:GetValue()
+			dropdown:SetValue(value)
+
+			if prev_value ~= value then
+				_G.AudioOptionsFrame_AudioRestart()
+			end
+		end
+
+		function output:initialize()
+			local value = _G.UIDropDownMenu_GetSelectedValue(self)
+			local num = _G.Sound_GameSystem_GetNumOutputDrivers()
+			local info = _G.UIDropDownMenu_CreateInfo()
+
+			for index = 0, num - 1, 1 do
+				info.text = _G.Sound_GameSystem_GetOutputDriverNameByIndex(index)
+				info.value = index
+				info.checked = nil
+
+				if value and value == index then
+					_G.UIDropDownMenu_SetText(self, info.text)
+					info.checked = true
+				else
+					info.checked = nil
+				end
+				info.func = output_OnClick
+
+				_G.UIDropDownMenu_AddButton(info);
+			end
+		end
+		output.type = _G.CONTROLTYPE_DROPDOWN
+		output.cvar = cvar
+		output.defaultValue = _G.BlizzardOptionsPanel_GetCVarDefaultSafe(cvar)
+		output.value = driver_index
+		output.newValue = driver_index
+
+		_G.UIDropDownMenu_SetSelectedValue(output, driver_index)
+		_G.UIDropDownMenu_Initialize(output, output.initialize)
+
+		function output:SetValue(value)
+			self.value = value
+			_G.BlizzardOptionsPanel_SetCVarSafe(self.cvar, value)
+		end
+
+		function output:GetValue()
+			return _G.BlizzardOptionsPanel_GetCVarSafe(self.cvar)
+		end
+
+		function output:RefreshValue()
+			local driver_index = _G.BlizzardOptionsPanel_GetCVarSafe(self.cvar)
+			local device_name = _G.Sound_GameSystem_GetOutputDriverNameByIndex(driver_index)
+
+			self.value = driver_index
+			self.newValue = driver_index
+
+			_G.UIDropDownMenu_SetSelectedValue(self, driver_index)
+			_G.UIDropDownMenu_Initialize(self, self.initialize)
+		end
+
+		local text = output:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("BOTTOM", output, "TOP", 63, 3)
+		text:SetText(_G.GAME_SOUND_OUTPUT)
 	end	-- do-block
 
 	-----------------------------------------------------------------------
@@ -804,7 +872,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 					  self.text = string.format("%d%%", value * 100)
 				  end,
 	})
-	local enabled = tonumber(AudioOptionsSoundPanelEnableSound:GetValue())
+	local enabled = tonumber(_G.AudioOptionsSoundPanelEnableSound:GetValue())
 
 	if enabled == 1 then
 		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
