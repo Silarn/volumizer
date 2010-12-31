@@ -671,8 +671,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 					info.text = data.name
 					info.value = index
 					info.hasArrow = true
-					info.notCheckable = 1
-					info.keepShownOnClick = 1
+					info.notCheckable = true
 
 					info.arg1 = index
 					info.func = UsePreset
