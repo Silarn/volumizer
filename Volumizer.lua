@@ -21,12 +21,10 @@ local def_col, def_bg_col = _G.TOOLTIP_DEFAULT_COLOR, _G.TOOLTIP_DEFAULT_BACKGRO
 -------------------------------------------------------------------------------
 local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
 
-Volumizer:SetScript("OnEvent",
-		    function(self, event, ...)
-			    if self[event] then
-				    return self[event] (self, event, ...)
-			    end
-		    end)
+Volumizer:SetScript("OnEvent", function(self, event, ...)
+	return self[event] and self[event](self, event, ...)
+end)
+
 Volumizer:RegisterEvent("ADDON_LOADED")
 
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
@@ -37,59 +35,59 @@ local DataObj
 -- Constants
 -------------------------------------------------------------------------------
 local DEFAULT_PRESET_VALUES = {
-	["ambience"]	= {
-		["volume"] = 0.6,
-		["enable"] = 1
+	ambience = {
+		volume = 0.6,
+		enable = 1
 	},
-	["music"]	= {
-		["volume"] = 0.4,
-		["enable"] = 1
+	music = {
+		volume = 0.4,
+		enable = 1
 	},
-	["master"]	= {
-		["volume"] = 1.0,
-		["enable"] = 1
+	master = {
+		volume = 1.0,
+		enable = 1
 	},
-	["sfx"]		= {
-		["volume"] = 1.0,
-		["enable"] = 1
+	sfx = {
+		volume = 1.0,
+		enable = 1
 	},
-	["error"]	= 1,
-	["emote"]	= 1,
-	["pet"]		= 1,
-	["loop"]	= 0,
-	["background"]	= 0,
-	["listener"]	= 1,
+	error = 1,
+	emote = 1,
+	pet = 1,
+	loop = 0,
+	background = 0,
+	listener = 1,
 }
 
 local INITIAL_PRESETS = {
-	[1] = {
-		["name"] = "Preset 1",
-		["values"] = DEFAULT_PRESET_VALUES,
+	{
+		name = "Preset 1",
+		values = DEFAULT_PRESET_VALUES,
 	},
-	[2] = {
-		["name"] = "Preset 2",
-		["values"] = DEFAULT_PRESET_VALUES,
+	{
+		name = "Preset 2",
+		values = DEFAULT_PRESET_VALUES,
 	},
-	[3] = {
-		["name"] = "Preset 3",
-		["values"] = DEFAULT_PRESET_VALUES,
+	{
+		name = "Preset 3",
+		values = DEFAULT_PRESET_VALUES,
 	},
-	[4] = {
-		["name"] = "Preset 4",
-		["values"] = DEFAULT_PRESET_VALUES,
+	{
+		name = "Preset 4",
+		values = DEFAULT_PRESET_VALUES,
 	},
-	[5] = {
-		["name"] = "Preset 5",
-		["values"] = DEFAULT_PRESET_VALUES,
+	{
+		name = "Preset 5",
+		values = DEFAULT_PRESET_VALUES,
 	},
 }
 
 local DEFAULT_PRESET = {
-	["values"] = DEFAULT_PRESET_VALUES
+	values = DEFAULT_PRESET_VALUES
 }
 
 local VOLUMES = {
-	["ambience"] = {
+	ambience = {
 		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
 		VolumeCVar	= "Sound_AmbienceVolume",
 		Volume		= AudioOptionsSoundPanelAmbienceVolume,
@@ -97,7 +95,7 @@ local VOLUMES = {
 		Enable		= AudioOptionsSoundPanelAmbientSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE,
 	},
-	["music"] = {
+	music = {
 		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
 		VolumeCVar	= "Sound_MusicVolume",
 		Volume		= AudioOptionsSoundPanelMusicVolume,
@@ -105,7 +103,7 @@ local VOLUMES = {
 		Enable		= AudioOptionsSoundPanelMusic,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC,
 	},
-	["master"] = {
+	master = {
 		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
 		VolumeCVar	= "Sound_MasterVolume",
 		Volume		= AudioOptionsSoundPanelMasterVolume,
@@ -113,7 +111,7 @@ local VOLUMES = {
 		Enable		= AudioOptionsSoundPanelEnableSound,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND,
 	},
-	["sfx"]	= {
+	sfx	= {
 		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
 		VolumeCVar	= "Sound_SFXVolume",
 		Volume		= AudioOptionsSoundPanelSoundVolume,
@@ -124,37 +122,37 @@ local VOLUMES = {
 }
 
 local TOGGLES = {
-	["error"] = {
+	error = {
 		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
 		EnableCVar	= "Sound_EnableErrorSpeech",
 		Enable		= AudioOptionsSoundPanelErrorSpeech,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
 	},
-	["emote"] = {
+	emote = {
 		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
 		EnableCVar	= "Sound_EnableEmoteSounds",
 		Enable		= AudioOptionsSoundPanelEmoteSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
 	},
-	["pet"] = {
+	pet = {
 		SoundOption	= SoundPanelOptions.Sound_EnablePetSounds,
 		EnableCVar	= "Sound_EnablePetSounds",
 		Enable		= AudioOptionsSoundPanelPetSounds,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
 	},
-	["loop"] = {
+	loop = {
 		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
 		Enable		= AudioOptionsSoundPanelLoopMusic,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
 	},
-	["background"] = {
+	background = {
 		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
 		Enable		= AudioOptionsSoundPanelSoundInBG,
 		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND,
 	},
-	["listener"] = {
+	listener = {
 		SoundOption	= SoundPanelOptions.Sound_ListenerAtCharacter,
 		EnableCVar	= "Sound_ListenerAtCharacter",
 		Enable		= nil,
@@ -225,14 +223,13 @@ do
 			check:SetChecked(tonumber(_G.GetCVar(ref.EnableCVar)))
 		end
 		check:SetHitRectInsets(-10, -150, 0, 0)
-		check:SetScript("OnClick",
-				function(checkButton)
-					if ref.Enable then
-						ref.Enable:SetValue(check:GetChecked() and 1 or 0)
-					else
-						_G.SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
-					end
-				end)
+		check:SetScript("OnClick", function(checkButton)
+			if ref.Enable then
+				ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+			else
+				_G.SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
+			end
+		end)
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
@@ -241,12 +238,11 @@ do
 		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
 		text:SetText(_G[ref.SoundOption.text])
 
-		_G.hooksecurefunc("SetCVar",
-				  function(cvar, value)
-					  if cvar == ref.EnableCVar then
-						  check:SetChecked(value)
-					  end
-				  end)
+		_G.hooksecurefunc("SetCVar", function(cvar, value)
+			if cvar == ref.EnableCVar then
+				check:SetChecked(value)
+			end
+		end)
 		return container
 	end
 
@@ -261,10 +257,9 @@ do
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
 		check:SetChecked(ref.Enable:GetValue())
-		check:SetScript("OnClick",
-				function(checkButton)
-					ref.Enable:SetValue(check:GetChecked() and 1 or 0)
-				end)
+		check:SetScript("OnClick", function(checkButton)
+			ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+		end)
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
@@ -287,49 +282,43 @@ do
 
 		SetSliderLabel(slider, ref, ref.Volume:GetValue())
 
-		slider:SetScript("OnValueChanged",
-				 function(self, value)
-					 value = tonumber(("%.2f"):format(value))
-					 ref.Volume:SetValue(value)
+		slider:SetScript("OnValueChanged", function(self, value)
+			ref.Volume:SetValue(value)
 
-					 SetSliderLabel(self, ref, value)
+			SetSliderLabel(self, ref, value)
 
-					 if ref == VOLUMES["master"] then
-						 DataObj:UpdateText(value)
-					 end
-				 end)
+			if ref == VOLUMES.master then
+				DataObj:UpdateText(value)
+			end
+		end)
 
-		slider:SetScript("OnMouseWheel",
-				 function(self, delta)
-					 local currentValue = tonumber(("%.2f"):format(self:GetValue()))
-					 local minValue, maxValue = self:GetMinMaxValues()
-					 local step = self:GetValueStep()
+		slider:SetScript("OnMouseWheel", function(self, delta)
+			local currentValue = self:GetValue()
+			local minValue, maxValue = self:GetMinMaxValues()
+			local step = self:GetValueStep()
 
-					 if delta > 0 then
-						 local new_value = tonumber(("%.2f"):format(math.min(maxValue, currentValue + step)))
-						 self:SetValue(new_value)
-					 elseif delta < 0 then
-						 local new_value = tonumber(("%.2f"):format(math.max(minValue, currentValue - step)))
-						 self:SetValue(new_value)
-					 end
-				 end)
+			if delta > 0 then
+				self:SetValue(math.min(maxValue, currentValue + step))
+			elseif delta < 0 then
+				self:SetValue(math.max(minValue, currentValue - step))
+			end
+		end)
 
-		_G.hooksecurefunc("SetCVar",
-				  function(cvar, value)
-					  if cvar == ref.VolumeCVar then
-						  slider:SetValue(value)
-					  elseif cvar == ref.EnableCVar then
-						  check:SetChecked(value)
+		_G.hooksecurefunc("SetCVar", function(cvar, value)
+			if cvar == ref.VolumeCVar then
+				slider:SetValue(value)
+			elseif cvar == ref.EnableCVar then
+				check:SetChecked(value)
 
-						  if ref == VOLUMES["master"] then
-							  if tonumber(value) == 1 then
-								  DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
-							  else
-								  DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
-							  end
-						  end
-					  end
-				  end)
+				if ref == VOLUMES.master then
+					if tonumber(value) == 1 then
+						DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+					else
+						DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+					end
+				end
+			end
+		end)
 		return container
 	end
 end
@@ -367,13 +356,13 @@ local function UsePreset(self, preset)
 		return
 	end
 
-	for k, v in pairs(VOLUMES) do
-		_G.SetCVar(VOLUMES[k].VolumeCVar, ref.values[k].volume)
-		_G.SetCVar(VOLUMES[k].EnableCVar, ref.values[k].enable)
+	for category, data in pairs(VOLUMES) do
+		_G.SetCVar(data.VolumeCVar, ref.values[category].volume)
+		_G.SetCVar(data.EnableCVar, ref.values[category].enable)
 	end
 
-	for k, v in pairs(TOGGLES) do
-		_G.SetCVar(TOGGLES[k].EnableCVar, ref.values[k])
+	for category, data in pairs(TOGGLES) do
+		_G.SetCVar(data.EnableCVar, ref.values[category])
 	end
 
 	-- Remove the check-mark from the menu entry.
@@ -388,13 +377,13 @@ local function SavePreset(self, preset)
 		return
 	end
 
-	for k, v in pairs(VOLUMES) do
-		ref.values[k].volume = _G.GetCVar(VOLUMES[k].VolumeCVar)
-		ref.values[k].enable = _G.GetCVar(VOLUMES[k].EnableCVar)
+	for category, data in pairs(VOLUMES) do
+		ref.values[category].volume = _G.GetCVar(data.VolumeCVar)
+		ref.values[category].enable = _G.GetCVar(data.EnableCVar)
 	end
 
-	for k, v in pairs(TOGGLES) do
-		ref.values[k] = _G.GetCVar(TOGGLES[k].EnableCVar)
+	for category, data in pairs(TOGGLES) do
+		ref.values[category] = _G.GetCVar(data.EnableCVar)
 	end
 	VolumizerPresets[preset] = ref
 end
@@ -421,19 +410,18 @@ local function AddPreset(self)
 		["name"]	= ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
 		["values"]	= {},
 	}
-	for key, value in pairs(DEFAULT_PRESET_VALUES) do
-		if _G.type(value) == "table" then
-			preset.values[key] = {}
+	for category, data in pairs(DEFAULT_PRESET_VALUES) do
+		if _G.type(data) == "table" then
+			preset.values[category] = {}
 
-			for k, v in pairs(value) do
-				preset.values[key][k] = v
+			for label, value in pairs(data) do
+				preset.values[category][label] = value
 			end
 		else
-			preset.values[key] = value
+			preset.values[category] = data
 		end
 	end
 	table.insert(VolumizerPresets, preset)
-
 	RenamePreset_Popup(self, #VolumizerPresets)
 end
 
@@ -443,16 +431,16 @@ do
 			return "CENTER", UIParent, 0, 0
 		end
 
-		local x,y = frame:GetCenter()
+		local x, y = frame:GetCenter()
 
 		if not x or not y then
 			return "TOPLEFT", "BOTTOMLEFT"
 		end
 
-		local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
-		local vhalf = (y > UIParent:GetHeight()/2) and "TOP" or "BOTTOM"
+		local hhalf = (x > UIParent:GetWidth() * 2 / 3) and "RIGHT" or (x < UIParent:GetWidth() / 3) and "LEFT" or ""
+		local vhalf = (y > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
 
-		return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
+		return vhalf .. hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP") .. hhalf
 	end
 
 	function Volumizer:Toggle(anchor, use_border)
@@ -481,7 +469,6 @@ function Volumizer:ADDON_LOADED(event, addon)
 	if addon ~= "Volumizer" then
 		return
 	end
-
 	self:UnregisterEvent("ADDON_LOADED")
 	self.ADDON_LOADED = nil
 
@@ -514,10 +501,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 	border:SetFrameStrata("MEDIUM")
 	border:SetBackdrop({
-				   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-				   tile = true, tileSize = 32, edgeSize = 32,
-				   insets = { left = 11, right = 12, top = 12, bottom = 11 }
-			   })
+		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		tile = true,
+		tileSize = 32,
+		edgeSize = 32,
+		insets = { left = 11, right = 12, top = 12, bottom = 11 }
+	})
 	border:SetBackdropBorderColor(def_col.r, def_col.g, def_col.b)
 	border:SetAllPoints(self)
 	border:Hide()
@@ -527,11 +516,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	titlebox:SetMovable(true)
 	titlebox:RegisterForDrag("LeftButton")
 	titlebox:SetScript("OnDragStart", function()
-						  Volumizer:StartMoving()
-					  end)
+		Volumizer:StartMoving()
+	end)
+
 	titlebox:SetScript("OnDragStop", function()
-						 Volumizer:StopMovingOrSizing()
-					 end)
+		Volumizer:StopMovingOrSizing()
+	end)
 
 	local titlebg = border:CreateTexture(nil, "ARTWORK")
 	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
@@ -553,14 +543,14 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	do
 		local widget
 
-		for k, v in pairs(VOLUMES) do
-			widget = MakeControl(k, relative)
+		for category in pairs(VOLUMES) do
+			widget = MakeControl(category, relative)
 			relative = widget
 		end
 		relative = MakeContainer(relative, -10)	-- Blank space in panel.
 
-		for k, v in pairs(TOGGLES) do
-			widget = MakeToggle(k, relative)
+		for category in pairs(TOGGLES) do
+			widget = MakeToggle(category, relative)
 			relative = widget
 		end
 	end	-- do-block
@@ -650,7 +640,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	do
 		local preset_menu = CreateFrame("Frame", nil, self)
-
 		preset_menu.displayMode = "MENU"
 		preset_menu.point = "TOPLEFT"
 		preset_menu.relativePoint = "RIGHT"
@@ -728,17 +717,16 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		preset_button:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
 		preset_button:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
 
-		preset_button:SetScript("OnClick",
-					function(self, button, down)
-						preset_menu.relativeTo = self
-						_G.ToggleDropDownMenu(1, nil, preset_menu, self:GetName(), 0, 0)
-					end)
-		preset_button:SetScript("OnHide",
-					function()
-						if _G.UIDROPDOWNMENU_OPEN_MENU == preset_menu then
-							_G.CloseDropDownMenus()
-						end
-					end)
+		preset_button:SetScript("OnClick", function(self, button, down)
+			preset_menu.relativeTo = self
+			_G.ToggleDropDownMenu(1, nil, preset_menu, self:GetName(), 0, 0)
+		end)
+
+		preset_button:SetScript("OnHide", function()
+			if _G.UIDROPDOWNMENU_OPEN_MENU == preset_menu then
+				_G.CloseDropDownMenus()
+			end
+		end)
 
 		local text = preset_button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("RIGHT", preset_button, "LEFT")
@@ -750,8 +738,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	do
 		local function OnRenamePreset(self)
-			local parent = self:GetParent()
-			local edit_box = parent.editBox or self.editBox
+			local edit_box = self:GetParent().editBox or self.editBox
 			local text = edit_box:GetText()
 
 			if text == "" then
@@ -768,24 +755,24 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			button1 = _G.ACCEPT,
 			button2 = _G.CANCEL,
 			OnShow = function(self)
-					 self.button1:Disable()
-					 self.button2:Enable()
-					 self.editBox:SetFocus()
-				 end,
+				self.button1:Disable()
+				self.button2:Enable()
+				self.editBox:SetFocus()
+			end,
 			OnAccept = OnRenamePreset,
 			EditBoxOnEnterPressed = OnRenamePreset,
 			EditBoxOnEscapePressed = function(self)
-							 self:GetParent():Hide()
-						 end,
-			EditBoxOnTextChanged = function (self)
-						       local parent = self:GetParent()
+				self:GetParent():Hide()
+			end,
+			EditBoxOnTextChanged = function(self)
+				local parent = self:GetParent()
 
-						       if parent.editBox:GetText() ~= "" then
-							       parent.button1:Enable()
-						       else
-							       parent.button1:Disable()
-						       end
-					       end,
+				if parent.editBox:GetText() ~= "" then
+					parent.button1:Enable()
+				else
+					parent.button1:Disable()
+				end
+			end,
 			timeout = 0,
 			hideOnEscape = 1,
 			exclusive = 1,
@@ -800,29 +787,27 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	do
 		local old_x, old_y, click_time
 
-		WorldFrame:HookScript("OnMouseDown",
-				      function(frame, ...)
-					      old_x, old_y = _G.GetCursorPosition()
-					      click_time = _G.GetTime()
-				      end)
+		_G.WorldFrame:HookScript("OnMouseDown", function(frame, ...)
+			old_x, old_y = _G.GetCursorPosition()
+			click_time = _G.GetTime()
+		end)
 
-		WorldFrame:HookScript("OnMouseUp",
-				      function(frame, ...)
-					      local x, y = _G.GetCursorPosition()
+		_G.WorldFrame:HookScript("OnMouseUp", function(frame, ...)
+			local x, y = _G.GetCursorPosition()
 
-					      if not old_x or not old_y or not x or not y or not click_time then
-						      self:Hide()
-						      border:Hide()
-						      return
-					      end
+			if not old_x or not old_y or not x or not y or not click_time then
+				self:Hide()
+				border:Hide()
+				return
+			end
 
-					      if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and _G.GetTime() - click_time < 1 then
-						      self:Hide()
-						      border:Hide()
-					      end
-				      end)
+			if (math.abs(x - old_x) + math.abs(y - old_y)) <= 5 and _G.GetTime() - click_time < 1 then
+				self:Hide()
+				border:Hide()
+			end
+		end)
 
-		table.insert(UISpecialFrames, "VolumizerPanel")
+		table.insert(_G.UISpecialFrames, "VolumizerPanel")
 
 		SLASH_Volumizer1 = "/volumizer"
 		SLASH_Volumizer2 = "/vol"
@@ -840,40 +825,34 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		label	= "Volumizer",
 		text	= "0%",
 		icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER",
-		OnClick	= function(display, button)
-				  if button == "LeftButton" then
-					  _G.SetCVar("Sound_EnableAllSound", (tonumber(_G.GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
-				  elseif button == "RightButton" then
-					  Volumizer:Toggle(display, false)
-				  end
-			  end,
-		OnTooltipShow	= function(self)
-					  self:AddLine(_G.KEY_BUTTON1.." - ".._G.MUTE)
-					  self:AddLine(_G.KEY_BUTTON2.." - ".._G.CLICK_FOR_DETAILS)
-				  end,
-		OnMouseWheel	= function(self, delta)
-					  local ref = VOLUMES["master"]
-					  local current = _G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
-					  local min = ref.SoundOption.minValue
-					  local max = ref.SoundOption.maxValue
-					  local step = 0.05
+		OnClick = function(display, button)
+			if button == "LeftButton" then
+				_G.SetCVar("Sound_EnableAllSound", (tonumber(_G.GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
+			elseif button == "RightButton" then
+				Volumizer:Toggle(display, false)
+			end
+		end,
+		OnTooltipShow = function(self)
+			self:AddLine(_G.KEY_BUTTON1 .. " - " .. _G.MUTE)
+			self:AddLine(_G.KEY_BUTTON2 .. " - " .. _G.CLICK_FOR_DETAILS)
+		end,
+		OnMouseWheel = function(self, delta)
+			local ref = VOLUMES.master
+			local current = _G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
+			local step = 0.05
 
-					  if delta > 0 then
-						  local new_value = tonumber(("%.2f"):format(math.min(max, current + step)))
-						  _G.SetCVar(ref.VolumeCVar, new_value)
-					  elseif delta < 0 then
-						  local new_value = tonumber(("%.2f"):format(math.max(min, current - step)))
-						  _G.SetCVar(ref.VolumeCVar, new_value)
-					  end
-
-				  end,
-		UpdateText	= function(self, value)
-					  self.text = string.format("%d%%", value * 100)
-				  end,
+			if delta > 0 then
+				_G.SetCVar(ref.VolumeCVar, math.min(ref.SoundOption.maxValue, current + step))
+			elseif delta < 0 then
+				_G.SetCVar(ref.VolumeCVar, math.max(ref.SoundOption.minValue, current - step))
+			end
+		end,
+		UpdateText = function(self, value)
+			self.text = ("%d%%"):format(value * 100)
+		end,
 	})
-	local enabled = tonumber(_G.AudioOptionsSoundPanelEnableSound:GetValue())
 
-	if enabled == 1 then
+	if tonumber(_G.AudioOptionsSoundPanelEnableSound:GetValue()) == 1 then
 		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
 	else
 		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
