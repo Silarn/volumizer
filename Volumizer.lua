@@ -348,7 +348,7 @@ function Volumizer:ChangeBackdrop(backdrop)
 	self:SetBackdropColor(def_bg_col.r, def_bg_col.g, def_bg_col.b)
 end
 
-local function UsePreset(self, preset)
+local function __UsePreset(preset)
 	local ref = (preset < 1) and DEFAULT_PRESET or VolumizerPresets[preset]
 
 	if not ref then
@@ -364,6 +364,10 @@ local function UsePreset(self, preset)
 	for category, data in pairs(TOGGLES) do
 		_G.SetCVar(data.EnableCVar, ref.values[category])
 	end
+end
+
+local function UsePreset(self, preset)
+	__UsePreset(preset)
 
 	-- Remove the check-mark from the menu entry.
 	_G[self:GetName().."Check"]:Hide()
@@ -811,10 +815,24 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 		SLASH_Volumizer1 = "/volumizer"
 		SLASH_Volumizer2 = "/vol"
-		SlashCmdList["Volumizer"] = function()
-						    Volumizer:Toggle(nil, true)
-					    end
+		SlashCmdList["Volumizer"] = function(preset_name)
+			local can_toggle = true
+			preset_name = preset_name:lower()
 
+			if preset_name then
+				for index = 1, #VolumizerPresets do
+					if VolumizerPresets[index].name:lower() == preset_name then
+						can_toggle = false
+						__UsePreset(index)
+						break
+					end
+				end
+			end
+
+			if can_toggle then
+				Volumizer:Toggle(nil, true)
+			end
+		end
 	end	-- do-block
 
 	-----------------------------------------------------------------------
