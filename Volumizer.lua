@@ -411,8 +411,8 @@ end
 
 local function AddPreset(self)
 	local preset = {
-		["name"]	= ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
-		["values"]	= {},
+		name = ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
+		values = {},
 	}
 	for category, data in pairs(DEFAULT_PRESET_VALUES) do
 		if _G.type(data) == "table" then
@@ -543,7 +543,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-- Slider and Checkbox setup
 	-----------------------------------------------------------------------
 	local relative = self
-
 	do
 		local widget
 
@@ -625,8 +624,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 		function output:RefreshValue()
 			local driver_index = _G.BlizzardOptionsPanel_GetCVarSafe(self.cvar)
-			local device_name = _G.Sound_GameSystem_GetOutputDriverNameByIndex(driver_index)
-
 			self.value = driver_index
 			self.newValue = driver_index
 
