@@ -161,10 +161,17 @@ local TOGGLES = {
 }
 
 local HorizontalSliderBG = {
-	bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
-	edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
-	edgeSize = 8, tile = true, tileSize = 8,
-	insets = {left = 3, right = 3, top = 6, bottom = 6}
+	bgFile = [[Interface\Buttons\UI-SliderBar-Background]],
+	edgeFile = [[Interface\Buttons\UI-SliderBar-Border]],
+	edgeSize = 8,
+	tile = true,
+	tileSize = 8,
+	insets = {
+		left = 3,
+		right = 3,
+		top = 6,
+		bottom = 6
+	}
 }
 
 -------------------------------------------------------------------------------
@@ -191,11 +198,11 @@ local function MakeCheckButton(parent)
 	local check = CreateFrame("CheckButton", nil, parent)
 	check:SetWidth(15)
 	check:SetHeight(15)
-	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
-	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
-	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
-	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
-	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	check:SetNormalTexture([[Interface\Buttons\UI-CheckBox-Up]])
+	check:SetPushedTexture([[Interface\Buttons\UI-CheckBox-Down]])
+	check:SetHighlightTexture([[Interface\Buttons\UI-CheckBox-Highlight]])
+	check:SetDisabledCheckedTexture([[Interface\Buttons\UI-CheckBox-Check-Disabled]])
+	check:SetCheckedTexture([[Interface\Buttons\UI-CheckBox-Check]])
 
 	return check
 end
@@ -270,7 +277,7 @@ do
 		slider:SetHeight(15)
 		slider:SetHitRectInsets(0, 0, -10, -10)
 		slider:SetOrientation("HORIZONTAL")
-		slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
+		slider:SetThumbTexture([[Interface\Buttons\UI-SliderBar-Button-Horizontal]])
 		slider:SetBackdrop(HorizontalSliderBG)
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
 		slider:SetValue(_G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
@@ -312,9 +319,9 @@ do
 
 				if ref == VOLUMES.master then
 					if tonumber(value) == 1 then
-						DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+						DataObj.icon = [[Interface\COMMON\VoiceChat-Speaker-Small]]
 					else
-						DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+						DataObj.icon = [[Interface\COMMON\VOICECHAT-MUTED]]
 					end
 				end
 			end
@@ -327,16 +334,30 @@ end
 -- Panel Backdrops
 -------------------------------------------------------------------------------
 local TooltipBackdrop = {
-	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true, tileSize = 16, edgeSize = 16,
-	insets = { left = 5, right = 5, top = 5, bottom = 5, }
+	bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
+	edgeFile = [[Interface\Tooltips\UI-Tooltip-Border]],
+	tile = true,
+	tileSize = 16,
+	edgeSize = 16,
+	insets = {
+		left = 5,
+		right = 5,
+		top = 5,
+		bottom = 5,
+	}
 }
 
 local PlainBackdrop = {
-	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-	tile = true, tileSize = 16, edgeSize = 16,
-	insets = { left = 5, right = 5, top = 5, bottom = 5, }
+	bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
+	tile = true,
+	tileSize = 16,
+	edgeSize = 16,
+	insets = {
+		left = 5,
+		right = 5,
+		top = 5,
+		bottom = 5,
+	}
 }
 
 -------------------------------------------------------------------------------
@@ -505,7 +526,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 	border:SetFrameStrata("MEDIUM")
 	border:SetBackdrop({
-		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		edgeFile = [[Interface\DialogFrame\UI-DialogBox-Border]],
 		tile = true,
 		tileSize = 32,
 		edgeSize = 32,
@@ -528,7 +549,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	end)
 
 	local titlebg = border:CreateTexture(nil, "ARTWORK")
-	titlebg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+	titlebg:SetTexture([[Interface\DialogFrame\UI-DialogBox-Header]])
 	titlebg:SetPoint("CENTER", border, "TOP", 0, -17)
 	titlebg:SetWidth(230)
 	titlebg:SetHeight(56)
@@ -713,10 +734,10 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		preset_button:SetWidth(20)
 		preset_button:SetHeight(20)
 		preset_button:SetPoint("RIGHT", self, "BOTTOMRIGHT", -8, 17)
-		preset_button:SetNormalTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Up")
-		preset_button:SetHighlightTexture("Interface\\BUTTONS\\ButtonHilight-Round")
-		preset_button:SetDisabledTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Disabled")
-		preset_button:SetPushedTexture("Interface\\BUTTONS\\UI-SpellbookIcon-NextPage-Down")
+		preset_button:SetNormalTexture([[Interface\BUTTONS\UI-SpellbookIcon-NextPage-Up]])
+		preset_button:SetHighlightTexture([[Interface\BUTTONS\ButtonHilight-Round]])
+		preset_button:SetDisabledTexture([[Interface\BUTTONS\UI-SpellbookIcon-NextPage-Disabled]])
+		preset_button:SetPushedTexture([[Interface\BUTTONS\UI-SpellbookIcon-NextPage-Down]])
 
 		preset_button:SetScript("OnClick", function(self, button, down)
 			preset_menu.relativeTo = self
@@ -839,7 +860,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		type	= "data source",
 		label	= "Volumizer",
 		text	= "0%",
-		icon	= "Interface\\COMMON\\VOICECHAT-SPEAKER",
+		icon	= [[Interface\COMMON\VOICECHAT-SPEAKER]],
 		OnClick = function(display, button)
 			if button == "LeftButton" then
 				_G.SetCVar("Sound_EnableAllSound", (tonumber(_G.GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
@@ -868,9 +889,9 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	})
 
 	if tonumber(_G.AudioOptionsSoundPanelEnableSound:GetValue()) == 1 then
-		DataObj.icon = "Interface\\COMMON\\VoiceChat-Speaker-Small"
+		DataObj.icon = [[Interface\COMMON\VoiceChat-Speaker-Small]]
 	else
-		DataObj.icon = "Interface\\COMMON\\VOICECHAT-MUTED"
+		DataObj.icon = [[Interface\COMMON\VOICECHAT-MUTED]]
 	end
 	DataObj:UpdateText(VOLUMES.master.Volume:GetValue())
 
