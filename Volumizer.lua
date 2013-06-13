@@ -27,7 +27,7 @@ end)
 
 Volumizer:RegisterEvent("ADDON_LOADED")
 
-local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
+local LDB = _G.LibStub:GetLibrary("LibDataBroker-1.1")
 
 local DataObj
 
@@ -88,75 +88,75 @@ local DEFAULT_PRESET = {
 
 local VOLUMES = {
 	ambience = {
-		SoundOption	= SoundPanelOptions.Sound_AmbienceVolume,
+		SoundOption	= _G.SoundPanelOptions.Sound_AmbienceVolume,
 		VolumeCVar	= "Sound_AmbienceVolume",
-		Volume		= AudioOptionsSoundPanelAmbienceVolume,
+		Volume		= _G.AudioOptionsSoundPanelAmbienceVolume,
 		EnableCVar	= "Sound_EnableAmbience",
-		Enable		= AudioOptionsSoundPanelAmbientSounds,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_AMBIENCE,
+		Enable		= _G.AudioOptionsSoundPanelAmbientSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_AMBIENCE,
 	},
 	music = {
-		SoundOption	= SoundPanelOptions.Sound_MusicVolume,
+		SoundOption	= _G.SoundPanelOptions.Sound_MusicVolume,
 		VolumeCVar	= "Sound_MusicVolume",
-		Volume		= AudioOptionsSoundPanelMusicVolume,
+		Volume		= _G.AudioOptionsSoundPanelMusicVolume,
 		EnableCVar	= "Sound_EnableMusic",
-		Enable		= AudioOptionsSoundPanelMusic,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC,
+		Enable		= _G.AudioOptionsSoundPanelMusic,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC,
 	},
 	master = {
-		SoundOption	= SoundPanelOptions.Sound_MasterVolume,
+		SoundOption	= _G.SoundPanelOptions.Sound_MasterVolume,
 		VolumeCVar	= "Sound_MasterVolume",
-		Volume		= AudioOptionsSoundPanelMasterVolume,
+		Volume		= _G.AudioOptionsSoundPanelMasterVolume,
 		EnableCVar	= "Sound_EnableAllSound",
-		Enable		= AudioOptionsSoundPanelEnableSound,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND,
+		Enable		= _G.AudioOptionsSoundPanelEnableSound,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUND,
 	},
 	sfx	= {
-		SoundOption	= SoundPanelOptions.Sound_SFXVolume,
+		SoundOption	= _G.SoundPanelOptions.Sound_SFXVolume,
 		VolumeCVar	= "Sound_SFXVolume",
-		Volume		= AudioOptionsSoundPanelSoundVolume,
+		Volume		= _G.AudioOptionsSoundPanelSoundVolume,
 		EnableCVar	= "Sound_EnableSFX",
-		Enable		= AudioOptionsSoundPanelSoundEffects,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUNDFX,
+		Enable		= _G.AudioOptionsSoundPanelSoundEffects,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUNDFX,
 	}
 }
 
 local TOGGLES = {
 	error = {
-		SoundOption	= SoundPanelOptions.Sound_EnableErrorSpeech,
+		SoundOption	= _G.SoundPanelOptions.Sound_EnableErrorSpeech,
 		EnableCVar	= "Sound_EnableErrorSpeech",
-		Enable		= AudioOptionsSoundPanelErrorSpeech,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
+		Enable		= _G.AudioOptionsSoundPanelErrorSpeech,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
 	},
 	emote = {
-		SoundOption	= SoundPanelOptions.Sound_EnableEmoteSounds,
+		SoundOption	= _G.SoundPanelOptions.Sound_EnableEmoteSounds,
 		EnableCVar	= "Sound_EnableEmoteSounds",
-		Enable		= AudioOptionsSoundPanelEmoteSounds,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
+		Enable		= _G.AudioOptionsSoundPanelEmoteSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
 	},
 	pet = {
-		SoundOption	= SoundPanelOptions.Sound_EnablePetSounds,
+		SoundOption	= _G.SoundPanelOptions.Sound_EnablePetSounds,
 		EnableCVar	= "Sound_EnablePetSounds",
-		Enable		= AudioOptionsSoundPanelPetSounds,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
+		Enable		= _G.AudioOptionsSoundPanelPetSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
 	},
 	loop = {
-		SoundOption	= SoundPanelOptions.Sound_ZoneMusicNoDelay,
+		SoundOption	= _G.SoundPanelOptions.Sound_ZoneMusicNoDelay,
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
-		Enable		= AudioOptionsSoundPanelLoopMusic,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
+		Enable		= _G.AudioOptionsSoundPanelLoopMusic,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
 	},
 	background = {
-		SoundOption	= SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
+		SoundOption	= _G.SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
-		Enable		= AudioOptionsSoundPanelSoundInBG,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_BGSOUND,
+		Enable		= _G.AudioOptionsSoundPanelSoundInBG,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_BGSOUND,
 	},
 	listener = {
-		SoundOption	= SoundPanelOptions.Sound_ListenerAtCharacter,
+		SoundOption	= _G.SoundPanelOptions.Sound_ListenerAtCharacter,
 		EnableCVar	= "Sound_ListenerAtCharacter",
 		Enable		= nil,
-		Tooltip		= OPTION_TOOLTIP_ENABLE_SOUND_AT_CHARACTER,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUND_AT_CHARACTER,
 	},
 }
 
