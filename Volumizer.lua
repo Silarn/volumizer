@@ -9,7 +9,7 @@ local table = _G.table
 
 local tonumber, tostring = _G.tonumber, _G.tostring
 
-local pairs, ipairs = _G.pairs, _G.ipairs
+local pairs = _G.pairs
 
 local CreateFrame = _G.CreateFrame
 local GameTooltip = _G.GameTooltip
@@ -177,7 +177,7 @@ local HorizontalSliderBG = {
 -------------------------------------------------------------------------------
 -- Variables
 -------------------------------------------------------------------------------
-VolumizerPresets = VolumizerPresets or INITIAL_PRESETS
+local user_presets
 
 -------------------------------------------------------------------------------
 -- Local functions
@@ -370,7 +370,7 @@ function Volumizer:ChangeBackdrop(backdrop)
 end
 
 local function __UsePreset(preset)
-	local ref = (preset < 1) and DEFAULT_PRESET or VolumizerPresets[preset]
+	local ref = (preset < 1) and DEFAULT_PRESET or user_presets[preset]
 
 	if not ref then
 		_G.error("The preset '"..preset.."' does not exist.")
@@ -394,8 +394,8 @@ local function DropDownUsePreset(self, preset)
 	_G[self:GetName().."Check"]:Hide()
 end
 
-	local ref = VolumizerPresets[preset]
 local function DropDownSavePreset(self, preset)
+	local ref = user_presets[preset]
 
 	if not ref then
 		_G.error("The preset '"..preset.."' does not exist.")
@@ -410,17 +410,17 @@ local function DropDownSavePreset(self, preset)
 	for category, data in pairs(TOGGLES) do
 		ref.values[category] = _G.GetCVar(data.EnableCVar)
 	end
-	VolumizerPresets[preset] = ref
+	user_presets[preset] = ref
 end
 
-	local ref = VolumizerPresets[preset]
 local function DropDownDeletePreset(self, preset)
+	local ref = user_presets[preset]
 
 	if not ref then
 		_G.error("The preset '"..preset.."' does not exist.")
 		return
 	end
-	table.remove(VolumizerPresets, preset)
+	table.remove(user_presets, preset)
 	_G.CloseDropDownMenus(1)
 end
 
@@ -446,8 +446,8 @@ local function DropDownAddPreset(self)
 			preset.values[category] = data
 		end
 	end
-	table.insert(VolumizerPresets, preset)
-	RenamePreset_Popup(self, #VolumizerPresets)
+	table.insert(user_presets, preset)
+	RenamePreset_Popup(self, #user_presets)
 end
 
 do
@@ -493,6 +493,12 @@ end	-- do
 function Volumizer:ADDON_LOADED(event, addon)
 	if addon ~= "Volumizer" then
 		return
+	end
+	user_presets = _G.VolumizerPresets
+
+	if not user_presets then
+		_G.VolumizerPresets = INITIAL_PRESETS
+		user_presets = _G.VolumizerPresets
 	end
 	self:UnregisterEvent("ADDON_LOADED")
 	self.ADDON_LOADED = nil
@@ -678,8 +684,8 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			table.wipe(info)
 
 			if level == 1 then
-				for index, data in ipairs(VolumizerPresets) do
-					info.text = data.name
+				for index = 1, #user_presets do
+					info.text = user_presets[index].name
 					info.value = index
 					info.hasArrow = true
 					info.notCheckable = true
@@ -768,7 +774,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			end
 			edit_box:SetText("")
 
-			VolumizerPresets[Volumizer.renaming].name = text
+			user_presets[Volumizer.renaming].name = text
 			edit_box:GetParent():Hide()
 		end
 
@@ -838,8 +844,8 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 			preset_name = preset_name:lower()
 
 			if preset_name then
-				for index = 1, #VolumizerPresets do
-					if VolumizerPresets[index].name:lower() == preset_name then
+				for index = 1, #user_presets do
+					if user_presets[index].name:lower() == preset_name then
 						can_toggle = false
 						__UsePreset(index)
 						break
