@@ -62,28 +62,28 @@ local DEFAULT_PRESET_VALUES = {
 local INITIAL_PRESETS = {
 	{
 		name = "Preset 1",
-		values = DEFAULT_PRESET_VALUES,
+		values = _G.CopyTable(DEFAULT_PRESET_VALUES),
 	},
 	{
 		name = "Preset 2",
-		values = DEFAULT_PRESET_VALUES,
+		values = _G.CopyTable(DEFAULT_PRESET_VALUES),
 	},
 	{
 		name = "Preset 3",
-		values = DEFAULT_PRESET_VALUES,
+		values = _G.CopyTable(DEFAULT_PRESET_VALUES),
 	},
 	{
 		name = "Preset 4",
-		values = DEFAULT_PRESET_VALUES,
+		values = _G.CopyTable(DEFAULT_PRESET_VALUES),
 	},
 	{
 		name = "Preset 5",
-		values = DEFAULT_PRESET_VALUES,
+		values = _G.CopyTable(DEFAULT_PRESET_VALUES),
 	},
 }
 
 local DEFAULT_PRESET = {
-	values = DEFAULT_PRESET_VALUES
+	values = _G.CopyTable(DEFAULT_PRESET_VALUES)
 }
 
 local VOLUMES = {
