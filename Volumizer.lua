@@ -387,15 +387,15 @@ local function __UsePreset(preset)
 	end
 end
 
-local function UsePreset(self, preset)
+local function DropDownUsePreset(self, preset)
 	__UsePreset(preset)
 
 	-- Remove the check-mark from the menu entry.
 	_G[self:GetName().."Check"]:Hide()
 end
 
-local function SavePreset(self, preset)
 	local ref = VolumizerPresets[preset]
+local function DropDownSavePreset(self, preset)
 
 	if not ref then
 		_G.error("The preset '"..preset.."' does not exist.")
@@ -413,8 +413,8 @@ local function SavePreset(self, preset)
 	VolumizerPresets[preset] = ref
 end
 
-local function DeletePreset(self, preset)
 	local ref = VolumizerPresets[preset]
+local function DropDownDeletePreset(self, preset)
 
 	if not ref then
 		_G.error("The preset '"..preset.."' does not exist.")
@@ -430,7 +430,7 @@ local function RenamePreset_Popup(self, preset)
 	_G.CloseDropDownMenus(1)
 end
 
-local function AddPreset(self)
+local function DropDownAddPreset(self)
 	local preset = {
 		name = ("Preset %s"):format(_G.date("%b %d %H:%M:%S %Y", _G.GetTime())),
 		values = {},
@@ -685,7 +685,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 					info.notCheckable = true
 
 					info.arg1 = index
-					info.func = UsePreset
+					info.func = DropDownUsePreset
 
 					_G.UIDropDownMenu_AddButton(info, level)
 				end
@@ -698,14 +698,14 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 				info.disabled = nil
 				info.text = _G.ADD
-				info.func = AddPreset
+				info.func = DropDownAddPreset
 				info.arg1 = 0
 				info.colorCode = "|cffffff00"
 				info.notCheckable = 1
 				_G.UIDropDownMenu_AddButton(info, level)
 
 				info.text = _G.DEFAULTS
-				info.func = UsePreset
+				info.func = DropDownUsePreset
 				info.arg1 = 0
 				info.colorCode = "|cffffff00"
 				info.notCheckable = 1
@@ -717,7 +717,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 				info.notCheckable = 1
 
 				info.text = _G.SAVE
-				info.func = SavePreset
+				info.func = DropDownSavePreset
 				_G.UIDropDownMenu_AddButton(info, level)
 
 				info.text = _G.NAME
@@ -725,7 +725,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 				_G.UIDropDownMenu_AddButton(info, level)
 
 				info.text = _G.DELETE
-				info.func = DeletePreset
+				info.func = DropDownDeletePreset
 				_G.UIDropDownMenu_AddButton(info, level)
 			end
 		end
