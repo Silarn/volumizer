@@ -628,7 +628,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 				end
 				info.func = output_OnClick
 
-				_G.UIDropDownMenu_AddButton(info);
+				_G.UIDropDownMenu_AddButton(info)
 			end
 		end
 		output.type = _G.CONTROLTYPE_DROPDOWN
