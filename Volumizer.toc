@@ -8,12 +8,7 @@
 ## X-Email: jcallahan@curse.com
 ## X-Category: Audio & Video
 
-## LoadManagers: AddonLoader
-## X-LoadOn-Always: Delayed
-
-#@no-lib-strip@
 embeds.xml
-#@end-no-lib-strip
 
 Libs\LibDataBroker-1.1.lua
 
