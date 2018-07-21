@@ -10,6 +10,4 @@
 
 embeds.xml
 
-Libs\LibDataBroker-1.1.lua
-
 Volumizer.lua
