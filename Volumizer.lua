@@ -1,13 +1,12 @@
 -------------------------------------------------------------------------------
 -- Localized globals
 -------------------------------------------------------------------------------
-local _G = getfenv(0)
-
 local math = _G.math
 local string = _G.string
 local table = _G.table
 
-local tonumber, tostring = _G.tonumber, _G.tostring
+local tonumber = _G.tonumber
+local tostring = _G.tostring
 
 local pairs = _G.pairs
 
@@ -19,7 +18,7 @@ local def_col, def_bg_col = _G.TOOLTIP_DEFAULT_COLOR, _G.TOOLTIP_DEFAULT_BACKGRO
 -------------------------------------------------------------------------------
 -- Addon namespace
 -------------------------------------------------------------------------------
-local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent)
+local Volumizer = CreateFrame("Frame", "VolumizerPanel", UIParent, _G.BackdropTemplateMixin and "BackdropTemplate")
 
 Volumizer:SetScript("OnEvent", function(self, event, ...)
 	return self[event] and self[event](self, event, ...)
@@ -271,7 +270,7 @@ do
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
 
-		local slider = CreateFrame("Slider", nil, container)
+		local slider = CreateFrame("Slider", nil, container, _G.BackdropTemplateMixin and "BackdropTemplate")
 		slider:SetPoint("LEFT", check, "RIGHT", 0, 0)
 		slider:SetPoint("RIGHT")
 		slider:SetHeight(15)
@@ -527,7 +526,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	-- Panel border setup
 	-----------------------------------------------------------------------
-	local border = CreateFrame("Frame", nil, self)
+	local border = CreateFrame("Frame", nil, self, _G.BackdropTemplateMixin and "BackdropTemplate")
 	self.border = border
 
 	border:SetFrameStrata("MEDIUM")
