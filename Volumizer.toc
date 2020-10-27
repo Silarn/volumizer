@@ -1,4 +1,4 @@
-## Interface: 80000
+## Interface: 90001
 ## Title: Volumizer
 ## Notes: Volume control panel.
 ## Author: Torhal
