@@ -36,27 +36,29 @@ local DataObj
 local DEFAULT_PRESET_VALUES = {
 	ambience = {
 		volume = 0.6,
-		enable = 1
+		enable = true
 	},
 	music = {
 		volume = 0.4,
-		enable = 1
+		enable = true
 	},
 	master = {
 		volume = 1.0,
-		enable = 1
+		enable = true
 	},
 	sfx = {
 		volume = 1.0,
-		enable = 1
+		enable = true
 	},
-	error = 1,
-	emote = 1,
-	pet = 1,
-	loop = 0,
-	background = 0,
-	listener = 1,
+	error = true,
+	emote = true,
+	pet = true,
+	loop = false,
+	background = false,
+	listener = true,
 }
+
+-- local category = Settings.GetCategory(AUDIO_LABEL); seems to be unused
 
 local INITIAL_PRESETS = {
 	{
@@ -87,7 +89,12 @@ local DEFAULT_PRESET = {
 
 local VOLUMES = {
 	ambience = {
-		SoundOption	= _G.SoundPanelOptions.Sound_AmbienceVolume,
+		SoundOption	= {
+		    text = _G.AMBIENCE_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
 		VolumeCVar	= "Sound_AmbienceVolume",
 		Volume		= _G.AudioOptionsSoundPanelAmbienceVolume,
 		EnableCVar	= "Sound_EnableAmbience",
@@ -95,7 +102,12 @@ local VOLUMES = {
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_AMBIENCE,
 	},
 	music = {
-		SoundOption	= _G.SoundPanelOptions.Sound_MusicVolume,
+		SoundOption	= {
+		    text = _G.MUSIC_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
 		VolumeCVar	= "Sound_MusicVolume",
 		Volume		= _G.AudioOptionsSoundPanelMusicVolume,
 		EnableCVar	= "Sound_EnableMusic",
@@ -103,7 +115,12 @@ local VOLUMES = {
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC,
 	},
 	master = {
-		SoundOption	= _G.SoundPanelOptions.Sound_MasterVolume,
+		SoundOption	= {
+		    text = _G.MASTER_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
 		VolumeCVar	= "Sound_MasterVolume",
 		Volume		= _G.AudioOptionsSoundPanelMasterVolume,
 		EnableCVar	= "Sound_EnableAllSound",
@@ -111,7 +128,12 @@ local VOLUMES = {
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUND,
 	},
 	sfx	= {
-		SoundOption	= _G.SoundPanelOptions.Sound_SFXVolume,
+		SoundOption	= {
+		    text = _G.FX_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
 		VolumeCVar	= "Sound_SFXVolume",
 		Volume		= _G.AudioOptionsSoundPanelSoundVolume,
 		EnableCVar	= "Sound_EnableSFX",
@@ -122,40 +144,52 @@ local VOLUMES = {
 
 local TOGGLES = {
 	error = {
-		SoundOption	= _G.SoundPanelOptions.Sound_EnableErrorSpeech,
+		SoundOption	= {
+		    text = _G.ENABLE_ERROR_SPEECH,
+		},
 		EnableCVar	= "Sound_EnableErrorSpeech",
 		Enable		= _G.AudioOptionsSoundPanelErrorSpeech,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
 	},
 	emote = {
-		SoundOption	= _G.SoundPanelOptions.Sound_EnableEmoteSounds,
+		SoundOption	= {
+		    text = _G.ENABLE_EMOTE_SOUNDS,
+		},
 		EnableCVar	= "Sound_EnableEmoteSounds",
 		Enable		= _G.AudioOptionsSoundPanelEmoteSounds,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
 	},
 	pet = {
-		SoundOption	= _G.SoundPanelOptions.Sound_EnablePetSounds,
+		SoundOption	= {
+		    text = _G.ENABLE_PET_SOUNDS,
+		},
 		EnableCVar	= "Sound_EnablePetSounds",
 		Enable		= _G.AudioOptionsSoundPanelPetSounds,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
 	},
 	loop = {
-		SoundOption	= _G.SoundPanelOptions.Sound_ZoneMusicNoDelay,
+		SoundOption	= {
+		    text = _G.ENABLE_MUSIC_LOOPING,
+		},
 		EnableCVar	= "Sound_ZoneMusicNoDelay",
 		Enable		= _G.AudioOptionsSoundPanelLoopMusic,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
 	},
 	background = {
-		SoundOption	= _G.SoundPanelOptions.Sound_EnableSoundWhenGameIsInBG,
+		SoundOption	= {
+		    text = _G.ENABLE_BGSOUND,
+		},
 		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
 		Enable		= _G.AudioOptionsSoundPanelSoundInBG,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_BGSOUND,
 	},
 	listener = {
-		SoundOption	= _G.SoundPanelOptions.Sound_ListenerAtCharacter,
-		EnableCVar	= "Sound_ListenerAtCharacter",
+		SoundOption	= {
+		    text = _G.ENABLE_SOFTWARE_HRTF,
+		},
+		EnableCVar	= "Sound_EnablePositionalLowPassFilter",
 		Enable		= nil,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUND_AT_CHARACTER,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOFTWARE_HRTF,
 	},
 }
 
@@ -226,14 +260,14 @@ do
 		if ref.Enable then
 			check:SetChecked(ref.Enable:GetValue())
 		else
-			check:SetChecked(tonumber(_G.GetCVar(ref.EnableCVar)))
+			check:SetChecked((Settings.GetValue(ref.EnableCVar)))
 		end
 		check:SetHitRectInsets(-10, -150, 0, 0)
 		check:SetScript("OnClick", function(checkButton)
 			if ref.Enable then
 				ref.Enable:SetValue(check:GetChecked() and 1 or 0)
 			else
-				_G.SetCVar(ref.EnableCVar, check:GetChecked() and 1 or 0)
+				Settings.SetValue(ref.EnableCVar, check:GetChecked())
 			end
 		end)
 		check.tooltip = ref.Tooltip
@@ -242,7 +276,7 @@ do
 
 		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", check, "RIGHT", 0, 3)
-		text:SetText(_G[ref.SoundOption.text])
+		text:SetText(ref.SoundOption.text)
 
 		_G.hooksecurefunc("SetCVar", function(cvar, value)
 			if cvar == ref.EnableCVar then
@@ -253,7 +287,7 @@ do
 	end
 
 	local function SetSliderLabel(slider, ref, value)
-		slider.text:SetFormattedText("%s %d%%", _G[ref.SoundOption.text], value * 100)
+		slider.text:SetFormattedText("%s %d%%", ref.SoundOption.text, value * 100)
 	end
 
 	function MakeControl(name, relative)
@@ -262,10 +296,17 @@ do
 
 		local check = MakeCheckButton(container)
 		check:SetPoint("LEFT", container, "LEFT")
-		check:SetChecked(ref.Enable:GetValue())
-		check:SetScript("OnClick", function(checkButton)
-			ref.Enable:SetValue(check:GetChecked() and 1 or 0)
-		end)
+		if ref.Enable then
+		    check:SetChecked(ref.Enable:GetValue())
+            check:SetScript("OnClick", function(checkButton)
+                ref.Enable:SetValue(check:GetChecked() and 1 or 0)
+            end)
+        else
+            check:SetChecked(Settings.GetValue(ref.EnableCVar))
+            check:SetScript("OnClick", function(checkButton)
+				Settings.SetValue(ref.EnableCVar, check:GetChecked())
+            end)
+        end
 		check.tooltip = ref.Tooltip
 		check:SetScript("OnEnter", ShowTooltip)
 		check:SetScript("OnLeave", HideTooltip)
@@ -279,17 +320,17 @@ do
 		slider:SetThumbTexture([[Interface\Buttons\UI-SliderBar-Button-Horizontal]])
 		slider:SetBackdrop(HorizontalSliderBG)
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
-		slider:SetValue(_G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar))
+		slider:SetValue(Settings.GetValue(ref.VolumeCVar))
 		slider:SetValueStep(0.05)
 		slider:EnableMouseWheel(true)
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
 
-		SetSliderLabel(slider, ref, ref.Volume:GetValue())
+		SetSliderLabel(slider, ref, Settings.GetValue(ref.VolumeCVar))
 
 		slider:SetScript("OnValueChanged", function(self, value)
-			ref.Volume:SetValue(value)
+		    Settings.SetValue(ref.VolumeCVar, value)
 
 			SetSliderLabel(self, ref, value)
 
@@ -317,7 +358,7 @@ do
 				check:SetChecked(value)
 
 				if ref == VOLUMES.master then
-					if tonumber(value) == 1 then
+					if value then
 						DataObj.icon = [[Interface\COMMON\VoiceChat-Speaker-Small]]
 					else
 						DataObj.icon = [[Interface\COMMON\VOICECHAT-MUTED]]
@@ -377,12 +418,28 @@ local function __UsePreset(preset)
 	end
 
 	for category, data in pairs(VOLUMES) do
-		_G.SetCVar(data.VolumeCVar, ref.values[category].volume)
-		_G.SetCVar(data.EnableCVar, ref.values[category].enable)
+		Settings.SetValue(data.VolumeCVar, tonumber(ref.values[category].volume))
+		local enable = ref.values[category].enable;
+		if (type(enable == "number")) then
+		    if enable then
+		        enable = true
+            else
+                enable = false
+            end
+        end
+		Settings.SetValue(data.EnableCVar, enable)
 	end
 
 	for category, data in pairs(TOGGLES) do
-		_G.SetCVar(data.EnableCVar, ref.values[category])
+		local enable = ref.values[category];
+		if (type(enable == "number")) then
+		    if enable then
+		        enable = true
+            else
+                enable = false
+            end
+        end
+		Settings.SetValue(data.EnableCVar, enable)
 	end
 end
 
@@ -402,12 +459,12 @@ local function DropDownSavePreset(self, preset)
 	end
 
 	for category, data in pairs(VOLUMES) do
-		ref.values[category].volume = _G.GetCVar(data.VolumeCVar)
-		ref.values[category].enable = _G.GetCVar(data.EnableCVar)
+		ref.values[category].volume = Settings.GetValue(data.VolumeCVar)
+		ref.values[category].enable = Settings.GetValue(data.EnableCVar)
 	end
 
 	for category, data in pairs(TOGGLES) do
-		ref.values[category] = _G.GetCVar(data.EnableCVar)
+		ref.values[category] = Settings.GetValue(data.EnableCVar)
 	end
 	user_presets[preset] = ref
 end
@@ -589,7 +646,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	-----------------------------------------------------------------------
 	do
 		local cvar = "Sound_OutputDriverIndex"
-		local driver_index = _G.BlizzardOptionsPanel_GetCVarSafe(cvar)
+		local driver_index = Settings.GetValue(cvar)
 		local device_name = _G.Sound_GameSystem_GetOutputDriverNameByIndex(driver_index)
 
 		local output = CreateFrame("Frame", "Volumizer_OutputDropDown", self, "UIDropDownMenuTemplate")
@@ -632,7 +689,6 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		end
 		output.type = _G.CONTROLTYPE_DROPDOWN
 		output.cvar = cvar
-		output.defaultValue = _G.BlizzardOptionsPanel_GetCVarDefaultSafe(cvar)
 		output.value = driver_index
 		output.newValue = driver_index
 
@@ -641,15 +697,15 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 
 		function output:SetValue(value)
 			self.value = value
-			_G.BlizzardOptionsPanel_SetCVarSafe(self.cvar, value)
+			Settings.SetValue(self.cvar, value)
 		end
 
 		function output:GetValue()
-			return _G.BlizzardOptionsPanel_GetCVarSafe(self.cvar)
+			return Settings.GetValue(self.cvar)
 		end
 
 		function output:RefreshValue()
-			local driver_index = _G.BlizzardOptionsPanel_GetCVarSafe(self.cvar)
+			driver_index = Settings.GetValue(self.cvar)
 			self.value = driver_index
 			self.newValue = driver_index
 
@@ -868,7 +924,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		icon	= [[Interface\COMMON\VOICECHAT-SPEAKER]],
 		OnClick = function(display, button)
 			if button == "LeftButton" then
-				_G.SetCVar("Sound_EnableAllSound", (tonumber(_G.GetCVar("Sound_EnableAllSound")) == 0) and 1 or 0)
+				Settings.SetValue("Sound_EnableAllSound", not Settings.GetValue("Sound_EnableAllSound"))
 			elseif button == "RightButton" then
 				Volumizer:Toggle(display, false)
 			end
@@ -893,12 +949,12 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		end,
 	})
 
-	if tonumber(_G.AudioOptionsSoundPanelEnableSound:GetValue()) == 1 then
+	if Settings.GetValue("Sound_EnableAllSound") then
 		DataObj.icon = [[Interface\COMMON\VoiceChat-Speaker-Small]]
 	else
 		DataObj.icon = [[Interface\COMMON\VOICECHAT-MUTED]]
 	end
-	DataObj:UpdateText(VOLUMES.master.Volume:GetValue())
+	DataObj:UpdateText(Settings.GetValue(VOLUMES.master.VolumeCVar))
 
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	self.PLAYER_ENTERING_WORLD = nil
