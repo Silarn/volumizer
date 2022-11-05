@@ -935,13 +935,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 		end,
 		OnMouseWheel = function(self, delta)
 			local ref = VOLUMES.master
-			local current = _G.BlizzardOptionsPanel_GetCVarSafe(ref.VolumeCVar)
+			local current = Settings.GetValue(ref.VolumeCVar)
 			local step = 0.05
 
 			if delta > 0 then
-				_G.SetCVar(ref.VolumeCVar, math.min(ref.SoundOption.maxValue, current + step))
+				Settings.SetValue(ref.VolumeCVar, math.min(ref.SoundOption.maxValue, current + step))
 			elseif delta < 0 then
-				_G.SetCVar(ref.VolumeCVar, math.max(ref.SoundOption.minValue, current - step))
+				Settings.SetValue(ref.VolumeCVar, math.max(ref.SoundOption.minValue, current - step))
 			end
 		end,
 		UpdateText = function(self, value)
