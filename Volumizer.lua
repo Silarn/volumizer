@@ -50,6 +50,10 @@ local DEFAULT_PRESET_VALUES = {
 		volume = 1.0,
 		enable = true
 	},
+	dialog = {
+		volume = 1.0,
+		enable = 1
+	},
 	error = true,
 	emote = true,
 	pet = true,
@@ -139,6 +143,19 @@ local VOLUMES = {
 		EnableCVar	= "Sound_EnableSFX",
 		Enable		= _G.AudioOptionsSoundPanelSoundEffects,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUNDFX,
+	},
+	dialog	= {
+		SoundOption	= {
+		    text = _G.DIALOG_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
+		VolumeCVar	= "Sound_DialogVolume",
+		Volume		= _G.AudioOptionsSoundPanelDialogVolume,
+		EnableCVar	= "Sound_EnableDialog",
+		Enable		= _G.AudioOptionsSoundPanelDialogSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_DIALOG_VOLUME,
 	}
 }
 
@@ -573,7 +590,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(305)
+	self:SetHeight(330)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
