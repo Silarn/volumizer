@@ -50,6 +50,12 @@ local DEFAULT_PRESET_VALUES = {
 		volume = 1.0,
 		enable = true
 	},
+	dialog = {
+		volume = 1.0,
+		enable = true
+	},
+	petmusic = false,
+	reverb = false,
 	error = true,
 	emote = true,
 	pet = true,
@@ -57,6 +63,7 @@ local DEFAULT_PRESET_VALUES = {
 	background = false,
 	listener = true,
 }
+local DB_VERSION = '20221106.01'
 
 -- local category = Settings.GetCategory(AUDIO_LABEL); seems to be unused
 
@@ -139,6 +146,19 @@ local VOLUMES = {
 		EnableCVar	= "Sound_EnableSFX",
 		Enable		= _G.AudioOptionsSoundPanelSoundEffects,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUNDFX,
+	},
+	dialog	= {
+		SoundOption	= {
+		    text = _G.DIALOG_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
+		VolumeCVar	= "Sound_DialogVolume",
+		Volume		= _G.AudioOptionsSoundPanelDialogVolume,
+		EnableCVar	= "Sound_EnableDialog",
+		Enable		= _G.AudioOptionsSoundPanelDialogSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_DIALOG,
 	}
 }
 
@@ -191,6 +211,22 @@ local TOGGLES = {
 		Enable		= nil,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOFTWARE_HRTF,
 	},
+	petmusic = {
+		SoundOption	= {
+		    text = _G.ENABLE_PET_BATTLE_MUSIC,
+		},
+		EnableCVar	= "Sound_EnablePetBattleMusic",
+		Enable		= nil,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_BATTLE_MUSIC,
+	},
+	reverb = {
+		SoundOption	= {
+		    text = _G.ENABLE_REVERB,
+		},
+		EnableCVar	= "Sound_EnableReverb",
+		Enable		= nil,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_REVERB,
+	},
 }
 
 local HorizontalSliderBG = {
@@ -206,6 +242,8 @@ local HorizontalSliderBG = {
 		bottom = 6
 	}
 }
+local order_VOLUMES = { "master", "sfx", "music", "ambience", "dialog" }
+local order_TOGGLES = { "loop", "petmusic", "pet", "emote", "error", "background", "reverb", "listener" }
 
 -------------------------------------------------------------------------------
 -- Variables
@@ -546,23 +584,36 @@ end	-- do
 -------------------------------------------------------------------------------
 -- Event functions
 -------------------------------------------------------------------------------
+-- Make sure Blizzard_Settings was loaded
+local loaded_Volumizer, loaded_Blizzard_Settings
 function Volumizer:ADDON_LOADED(event, addon)
-	if addon ~= "Volumizer" then
-		return
-	end
-	user_presets = _G.VolumizerPresets
-
-	if not user_presets then
-		_G.VolumizerPresets = INITIAL_PRESETS
+	if addon == "Volumizer" then
 		user_presets = _G.VolumizerPresets
-	end
-	self:UnregisterEvent("ADDON_LOADED")
-	self.ADDON_LOADED = nil
 
-	if _G.IsLoggedIn() then
-		self:PLAYER_ENTERING_WORLD()
-	else
-		self:RegisterEvent("PLAYER_ENTERING_WORLD")
+		if not user_presets or _G.VolumizerDBVersion ~= DB_VERSION then
+			_G.VolumizerPresets = INITIAL_PRESETS
+			user_presets = _G.VolumizerPresets
+			_G.VolumizerDBVersion = DB_VERSION
+			print("Volumizer profile has been reset to default.")
+		end
+		loaded_Volumizer = true
+
+		if _G.IsAddOnLoaded('Blizzard_Settings') then
+			loaded_Blizzard_Settings = true
+		end
+
+	elseif addon == "Blizzard_Settings" then
+		loaded_Blizzard_Settings = true
+	end
+
+	if loaded_Volumizer and loaded_Blizzard_Settings then
+		if _G.IsLoggedIn() then
+			self:PLAYER_ENTERING_WORLD()
+		else
+			self:RegisterEvent("PLAYER_ENTERING_WORLD")
+		end
+		self:UnregisterEvent("ADDON_LOADED")
+		self.ADDON_LOADED = nil
 	end
 end
 
@@ -573,7 +624,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(305)
+	self:SetHeight(385)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
@@ -629,13 +680,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	do
 		local widget
 
-		for category in pairs(VOLUMES) do
+		for _, category in ipairs(order_VOLUMES) do
 			widget = MakeControl(category, relative)
 			relative = widget
 		end
 		relative = MakeContainer(relative, -10)	-- Blank space in panel.
 
-		for category in pairs(TOGGLES) do
+		for _, category in ipairs(order_TOGGLES) do
 			widget = MakeToggle(category, relative)
 			relative = widget
 		end
