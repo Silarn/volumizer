@@ -38,29 +38,32 @@ local DEFAULT_PRESET_VALUES = {
 		volume = 0.6,
 		enable = true
 	},
-	music = {
-		volume = 0.4,
+	dialog = {
+		volume = 1.0,
 		enable = true
 	},
 	master = {
 		volume = 1.0,
 		enable = true
 	},
+	music = {
+		volume = 0.4,
+		enable = true
+	},
 	sfx = {
 		volume = 1.0,
 		enable = true
 	},
-	dialog = {
-		volume = 1.0,
-		enable = 1
-	},
 	error = true,
 	emote = true,
 	pet = true,
+	petmusic = false,
+	reverb = false,
 	loop = false,
 	background = false,
 	listener = true,
 }
+local DB_VERSION = '20221106.01'
 
 -- local category = Settings.GetCategory(AUDIO_LABEL); seems to be unused
 
@@ -105,18 +108,18 @@ local VOLUMES = {
 		Enable		= _G.AudioOptionsSoundPanelAmbientSounds,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_AMBIENCE,
 	},
-	music = {
+	dialog	= {
 		SoundOption	= {
-		    text = _G.MUSIC_VOLUME,
+		    text = _G.DIALOG_VOLUME,
 		    minValue = 0,
 		    maxValue = 1,
 		    step = .05,
 		},
-		VolumeCVar	= "Sound_MusicVolume",
-		Volume		= _G.AudioOptionsSoundPanelMusicVolume,
-		EnableCVar	= "Sound_EnableMusic",
-		Enable		= _G.AudioOptionsSoundPanelMusic,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC,
+		VolumeCVar	= "Sound_DialogVolume",
+		Volume		= _G.AudioOptionsSoundPanelDialogVolume,
+		EnableCVar	= "Sound_EnableDialog",
+		Enable		= _G.AudioOptionsSoundPanelDialogSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_DIALOG,
 	},
 	master = {
 		SoundOption	= {
@@ -131,6 +134,19 @@ local VOLUMES = {
 		Enable		= _G.AudioOptionsSoundPanelEnableSound,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUND,
 	},
+	music = {
+		SoundOption	= {
+		    text = _G.MUSIC_VOLUME,
+		    minValue = 0,
+		    maxValue = 1,
+		    step = .05,
+		},
+		VolumeCVar	= "Sound_MusicVolume",
+		Volume		= _G.AudioOptionsSoundPanelMusicVolume,
+		EnableCVar	= "Sound_EnableMusic",
+		Enable		= _G.AudioOptionsSoundPanelMusic,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC,
+	},
 	sfx	= {
 		SoundOption	= {
 		    text = _G.FX_VOLUME,
@@ -143,30 +159,17 @@ local VOLUMES = {
 		EnableCVar	= "Sound_EnableSFX",
 		Enable		= _G.AudioOptionsSoundPanelSoundEffects,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOUNDFX,
-	},
-	dialog	= {
-		SoundOption	= {
-		    text = _G.DIALOG_VOLUME,
-		    minValue = 0,
-		    maxValue = 1,
-		    step = .05,
-		},
-		VolumeCVar	= "Sound_DialogVolume",
-		Volume		= _G.AudioOptionsSoundPanelDialogVolume,
-		EnableCVar	= "Sound_EnableDialog",
-		Enable		= _G.AudioOptionsSoundPanelDialogSounds,
-		Tooltip		= _G.OPTION_TOOLTIP_DIALOG_VOLUME,
 	}
 }
 
 local TOGGLES = {
-	error = {
+	background = {
 		SoundOption	= {
-		    text = _G.ENABLE_ERROR_SPEECH,
+		    text = _G.ENABLE_BGSOUND,
 		},
-		EnableCVar	= "Sound_EnableErrorSpeech",
-		Enable		= _G.AudioOptionsSoundPanelErrorSpeech,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
+		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
+		Enable		= _G.AudioOptionsSoundPanelSoundInBG,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_BGSOUND,
 	},
 	emote = {
 		SoundOption	= {
@@ -176,13 +179,21 @@ local TOGGLES = {
 		Enable		= _G.AudioOptionsSoundPanelEmoteSounds,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_EMOTE_SOUNDS,
 	},
-	pet = {
+	error = {
 		SoundOption	= {
-		    text = _G.ENABLE_PET_SOUNDS,
+		    text = _G.ENABLE_ERROR_SPEECH,
 		},
-		EnableCVar	= "Sound_EnablePetSounds",
-		Enable		= _G.AudioOptionsSoundPanelPetSounds,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
+		EnableCVar	= "Sound_EnableErrorSpeech",
+		Enable		= _G.AudioOptionsSoundPanelErrorSpeech,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_ERROR_SPEECH,
+	},
+	listener = {
+		SoundOption	= {
+		    text = _G.ENABLE_SOFTWARE_HRTF,
+		},
+		EnableCVar	= "Sound_EnablePositionalLowPassFilter",
+		Enable		= nil,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOFTWARE_HRTF,
 	},
 	loop = {
 		SoundOption	= {
@@ -192,21 +203,29 @@ local TOGGLES = {
 		Enable		= _G.AudioOptionsSoundPanelLoopMusic,
 		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_MUSIC_LOOPING,
 	},
-	background = {
+	pet = {
 		SoundOption	= {
-		    text = _G.ENABLE_BGSOUND,
+		    text = _G.ENABLE_PET_SOUNDS,
 		},
-		EnableCVar	= "Sound_EnableSoundWhenGameIsInBG",
-		Enable		= _G.AudioOptionsSoundPanelSoundInBG,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_BGSOUND,
+		EnableCVar	= "Sound_EnablePetSounds",
+		Enable		= _G.AudioOptionsSoundPanelPetSounds,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_SOUNDS,
 	},
-	listener = {
+	petmusic = {
 		SoundOption	= {
-		    text = _G.ENABLE_SOFTWARE_HRTF,
+		    text = _G.ENABLE_PET_BATTLE_MUSIC,
 		},
-		EnableCVar	= "Sound_EnablePositionalLowPassFilter",
+		EnableCVar	= "Sound_EnablePetBattleMusic",
 		Enable		= nil,
-		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_SOFTWARE_HRTF,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_PET_BATTLE_MUSIC,
+	},
+	reverb = {
+		SoundOption	= {
+		    text = _G.ENABLE_REVERB,
+		},
+		EnableCVar	= "Sound_EnableReverb",
+		Enable		= nil,
+		Tooltip		= _G.OPTION_TOOLTIP_ENABLE_REVERB,
 	},
 }
 
@@ -223,6 +242,8 @@ local HorizontalSliderBG = {
 		bottom = 6
 	}
 }
+local order_VOLUMES = { "master", "music", "ambience", "dialog" }
+local order_TOGGLES = { "loop", "petmusic", "pet", "emote", "error", "background", "reverb", "listener" }
 
 -------------------------------------------------------------------------------
 -- Variables
@@ -563,23 +584,36 @@ end	-- do
 -------------------------------------------------------------------------------
 -- Event functions
 -------------------------------------------------------------------------------
+-- Make sure Blizzard_Settings was loaded
+local loaded_Volumizer, loaded_Blizzard_Settings
 function Volumizer:ADDON_LOADED(event, addon)
-	if addon ~= "Volumizer" then
-		return
-	end
-	user_presets = _G.VolumizerPresets
-
-	if not user_presets then
-		_G.VolumizerPresets = INITIAL_PRESETS
+	if addon == "Volumizer" then
 		user_presets = _G.VolumizerPresets
-	end
-	self:UnregisterEvent("ADDON_LOADED")
-	self.ADDON_LOADED = nil
 
-	if _G.IsLoggedIn() then
-		self:PLAYER_ENTERING_WORLD()
-	else
-		self:RegisterEvent("PLAYER_ENTERING_WORLD")
+		if not user_presets or _G.VolumizerDBVersion ~= DB_VERSION then
+			_G.VolumizerPresets = INITIAL_PRESETS
+			user_presets = _G.VolumizerPresets
+			_G.VolumizerDBVersion = DB_VERSION
+			print("Volumizer profile has been reset to default.")
+		end
+		loaded_Volumizer = true
+
+		if _G.IsAddOnLoaded('Blizzard_Settings') then
+			loaded_Blizzard_Settings = true
+		end
+
+	elseif addon == "Blizzard_Settings" then
+		loaded_Blizzard_Settings = true
+	end
+
+	if loaded_Volumizer and loaded_Blizzard_Settings then
+		if _G.IsLoggedIn() then
+			self:PLAYER_ENTERING_WORLD()
+		else
+			self:RegisterEvent("PLAYER_ENTERING_WORLD")
+		end
+		self:UnregisterEvent("ADDON_LOADED")
+		self.ADDON_LOADED = nil
 	end
 end
 
@@ -590,7 +624,7 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	self:SetFrameStrata("MEDIUM")
 	self:ChangeBackdrop(PlainBackdrop)
 	self:SetWidth(180)
-	self:SetHeight(330)
+	self:SetHeight(305)
 	self:SetToplevel(true)
 	self:EnableMouse(true)
 	self:SetMovable(true)
@@ -646,13 +680,13 @@ function Volumizer:PLAYER_ENTERING_WORLD()
 	do
 		local widget
 
-		for category in pairs(VOLUMES) do
+		for _, category in ipairs(order_VOLUMES) do
 			widget = MakeControl(category, relative)
 			relative = widget
 		end
 		relative = MakeContainer(relative, -10)	-- Blank space in panel.
 
-		for category in pairs(TOGGLES) do
+		for _, category in ipairs(order_TOGGLES) do
 			widget = MakeToggle(category, relative)
 			relative = widget
 		end
