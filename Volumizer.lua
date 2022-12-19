@@ -358,14 +358,14 @@ do
 		slider:SetThumbTexture([[Interface\Buttons\UI-SliderBar-Button-Horizontal]])
 		slider:SetBackdrop(HorizontalSliderBG)
 		slider:SetMinMaxValues(ref.SoundOption.minValue, ref.SoundOption.maxValue)
-		slider:SetValue(Settings.GetValue(ref.VolumeCVar))
+		slider:SetValue(Settings.GetValue(ref.VolumeCVar) or 0)
 		slider:SetValueStep(0.05)
 		slider:EnableMouseWheel(true)
 
 		slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 3)
 
-		SetSliderLabel(slider, ref, Settings.GetValue(ref.VolumeCVar))
+		SetSliderLabel(slider, ref, Settings.GetValue(ref.VolumeCVar) or 0)
 
 		slider:SetScript("OnValueChanged", function(self, value)
 		    Settings.SetValue(ref.VolumeCVar, value)
